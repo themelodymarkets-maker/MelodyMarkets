@@ -7,48 +7,71 @@ import { AuthCard } from "@/components/auth/AuthCard";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { createClient } from "@/lib/supabase/client";
-import { validateEmail } from "@/lib/auth-validation";
+import {
+  validateEmail,
+  validatePassword,
+  validateUsername,
+} from "@/lib/auth-validation";
 
+/** Per-field validation errors, keyed by field name. */
 type FieldErrors = {
+  username?: string;
   email?: string;
   password?: string;
 };
 
-export default function LoginPage() {
+export default function SignupPage() {
   const router = useRouter();
 
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
-  // Error returned by Supabase (for example, invalid credentials).
+  // Error returned by Supabase (for example, email already registered).
   const [formError, setFormError] = useState<string | null>(null);
+  // Shown when signup succeeds but email confirmation is required.
+  const [notice, setNotice] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError(null);
+    setNotice(null);
 
-    // Only shape-check here; the real credential check happens at Supabase.
+    // Validate every field up front and collect the results.
     const errors: FieldErrors = {
+      username: validateUsername(username) ?? undefined,
       email: validateEmail(email) ?? undefined,
-      password: password.length === 0 ? "Enter your password." : undefined,
+      password: validatePassword(password) ?? undefined,
     };
     setFieldErrors(errors);
-    if (errors.email || errors.password) {
+    if (errors.username || errors.email || errors.password) {
       return;
     }
 
     setIsSubmitting(true);
     const supabase = createClient();
 
-    const { error } = await supabase.auth.signInWithPassword({
+    // The `username` in options.data becomes raw_user_meta_data, which the
+    // on-signup database trigger reads to create the matching profile row.
+    const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
+      options: {
+        data: { username: username.trim() },
+      },
     });
 
     if (error) {
       setFormError(error.message);
+      setIsSubmitting(false);
+      return;
+    }
+
+    // When email confirmation is enabled, no session is returned yet.
+    if (!data.session) {
+      setNotice("Check your email to confirm your account, then sign in.");
       setIsSubmitting(false);
       return;
     }
@@ -61,15 +84,27 @@ export default function LoginPage() {
   return (
     <PageShell>
       <AuthCard
-        title="Welcome back"
-        subtitle="Sign in to pick up where you left off."
+        title="Create your account"
+        subtitle="Start trading virtual shares of your favorite artists."
         footer={{
-          prompt: "New to MelodyMarkets?",
-          linkLabel: "Create an account",
-          href: "/signup",
+          prompt: "Already have an account?",
+          linkLabel: "Sign in",
+          href: "/login",
         }}
       >
         <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+          <Input
+            label="Username"
+            name="username"
+            type="text"
+            autoComplete="username"
+            placeholder="melodymaker"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            invalid={Boolean(fieldErrors.username)}
+            hint={fieldErrors.username ?? "3-20 characters. Letters, numbers, underscores."}
+            disabled={isSubmitting}
+          />
           <Input
             label="Email"
             name="email"
@@ -86,8 +121,8 @@ export default function LoginPage() {
             label="Password"
             name="password"
             type="password"
-            autoComplete="current-password"
-            placeholder="Your password"
+            autoComplete="new-password"
+            placeholder="At least 8 characters"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             invalid={Boolean(fieldErrors.password)}
@@ -100,9 +135,14 @@ export default function LoginPage() {
               {formError}
             </p>
           )}
+          {notice && (
+            <p role="status" className="text-sm text-accent-cyan">
+              {notice}
+            </p>
+          )}
 
           <Button type="submit" disabled={isSubmitting} className="mt-2 w-full">
-            {isSubmitting ? "Signing in…" : "Sign in"}
+            {isSubmitting ? "Creating account…" : "Create account"}
           </Button>
         </form>
       </AuthCard>
