@@ -53,7 +53,13 @@ export default function LoginPage() {
       return;
     }
 
-    // Refresh so server components (like the nav) see the new session.
+    // Success: clear the form so no stale credentials linger in the DOM,
+    // then navigate. `router.push` moves us to /markets, and `router.refresh()`
+    // immediately after tells Next.js to throw away its cached copy of every
+    // Server Component on the page — including the session-aware nav — and
+    // re-render them with the session cookie that Supabase just set.
+    setEmail("");
+    setPassword("");
     router.push("/markets");
     router.refresh();
   }

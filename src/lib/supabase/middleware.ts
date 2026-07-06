@@ -36,6 +36,12 @@ export async function updateSession(request: NextRequest) {
           );
         },
       },
+      global: {
+        // Force every Supabase network call to bypass the platform fetch
+        // cache, so the session check below always reflects the latest
+        // cookies instead of a memoized response from another request.
+        fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
+      },
     },
   );
 
@@ -54,8 +60,18 @@ export async function updateSession(request: NextRequest) {
   if (!user && isProtected) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
-    return NextResponse.redirect(redirectUrl);
+    const redirectResponse = NextResponse.redirect(redirectUrl);
+    redirectResponse.headers.set("Cache-Control", "private, no-store");
+    return redirectResponse;
   }
+
+  // Every response that passes through this middleware may carry a fresh
+  // session cookie (Set-Cookie) or reflect a per-user auth state. On Vercel,
+  // responses without an explicit Cache-Control header can be cached at the
+  // CDN/edge layer, which would leak one user's session (or logged-out state)
+  // to the next visitor. `private, no-store` guarantees every request is
+  // evaluated fresh and never shared between users or reused after sign-out.
+  response.headers.set("Cache-Control", "private, no-store");
 
   // Must return this exact response so refreshed cookies are preserved.
   return response;

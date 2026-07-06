@@ -17,7 +17,10 @@ export async function Header() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Look up the display name to show in the nav when signed in.
+  // Whether to show "Sign Out" is decided purely from `user`. The profile
+  // lookup below is only used for the *display name* — if it fails or the
+  // row is momentarily missing, an authenticated user must still see the
+  // Sign Out button rather than incorrectly falling back to "Sign In".
   let username: string | null = null;
   if (user) {
     const { data: profile } = await supabase
@@ -25,8 +28,9 @@ export async function Header() {
       .select("username")
       .eq("id", user.id)
       .single();
-    username = profile?.username ?? null;
+    // Fall back to the email prefix so we always have something to display.
+    username = profile?.username ?? user.email?.split("@")[0] ?? "Account";
   }
 
-  return <HeaderNav username={username} />;
+  return <HeaderNav isAuthenticated={user !== null} username={username} />;
 }

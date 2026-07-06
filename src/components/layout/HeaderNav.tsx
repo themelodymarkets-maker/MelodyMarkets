@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/layout/Logo";
@@ -10,6 +10,8 @@ import { NAV_LINKS } from "@/lib/nav-links";
 import { createClient } from "@/lib/supabase/client";
 
 interface HeaderNavProps {
+  /** Whether the server saw a valid session when this layout last rendered. */
+  isAuthenticated: boolean;
   /** Display name of the signed-in user, or null when signed out. */
   username: string | null;
 }
@@ -17,24 +19,48 @@ interface HeaderNavProps {
 /**
  * Client-side navigation shell.
  *
- * The session state is resolved on the server (see Header) and passed in via
- * `username`, so this component only owns interactivity: the mobile menu toggle
+ * The session state is resolved on the server (see Header) and passed in as
+ * props, so this component only owns interactivity: the mobile menu toggle
  * and the sign-out action.
+ *
+ * It also subscribes to Supabase's auth events directly. This is a safety
+ * net: `router.refresh()` calls made elsewhere (login/signup pages) normally
+ * re-render this Server Component with fresh props, but if one of those
+ * calls is ever missed, delayed, or dropped by the client-side route cache,
+ * this listener independently notices the SIGNED_IN / SIGNED_OUT event and
+ * forces a refresh, so the nav can never get stuck showing the wrong state.
  */
-export function HeaderNav({ username }: HeaderNavProps) {
+export function HeaderNav({ isAuthenticated, username }: HeaderNavProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const router = useRouter();
 
-  const isAuthenticated = username !== null;
+  useEffect(() => {
+    const supabase = createClient();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      // Re-fetch this Server Component's props whenever the sign-in state
+      // actually flips, so the nav can never drift out of sync with cookies.
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
+        router.refresh();
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [router]);
 
   async function handleSignOut() {
     setIsSigningOut(true);
     const supabase = createClient();
+    // signOut() clears the session from both local storage and the cookies
+    // that the browser client manages, so the server will see a logged-out
+    // user on the very next request.
     await supabase.auth.signOut();
     setIsMenuOpen(false);
+    setIsSigningOut(false);
     // Send the user home and refresh so the server re-reads the (now empty)
-    // session and the nav updates to its signed-out state.
+    // session and every Server Component (including this nav) updates.
     router.push("/");
     router.refresh();
   }

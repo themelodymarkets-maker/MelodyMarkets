@@ -13,6 +13,12 @@ export const metadata: Metadata = {
   description: "Trade virtual shares of your favorite music artists.",
 };
 
+// The root layout renders the session-aware Header on every page. Force
+// dynamic rendering (no static HTML caching, no ISR) so Vercel always
+// re-runs this layout per request and never serves one visitor's cached
+// signed-in/signed-out shell to another visitor.
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({
   children,
 }: Readonly<{

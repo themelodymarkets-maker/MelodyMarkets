@@ -36,6 +36,14 @@ export async function createClient() {
           }
         },
       },
+      global: {
+        // Next.js extends the global `fetch` with its own caching layer.
+        // Without this override, a request like `auth.getUser()` could be
+        // memoized by Vercel's Data Cache and silently reused for a later
+        // request from a *different* user. `cache: "no-store"` forces every
+        // Supabase network call from this client to always hit the network.
+        fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
+      },
     },
   );
 }

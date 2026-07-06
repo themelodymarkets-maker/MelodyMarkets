@@ -69,14 +69,24 @@ export default function SignupPage() {
       return;
     }
 
-    // When email confirmation is enabled, no session is returned yet.
+    // When email confirmation is enabled, no session is returned yet, so
+    // there is nothing to redirect to — the account exists, but the user
+    // must confirm their email before they can sign in.
     if (!data.session) {
       setNotice("Check your email to confirm your account, then sign in.");
+      setPassword("");
       setIsSubmitting(false);
       return;
     }
 
-    // Refresh so server components (like the nav) see the new session.
+    // Success with an active session: clear the form, then navigate.
+    // `router.push` moves us to /markets, and `router.refresh()` immediately
+    // after discards Next.js's cached copy of every Server Component on the
+    // page — including the session-aware nav — and re-renders them using the
+    // session cookie Supabase just set, so the signed-in state shows instantly.
+    setUsername("");
+    setEmail("");
+    setPassword("");
     router.push("/markets");
     router.refresh();
   }
