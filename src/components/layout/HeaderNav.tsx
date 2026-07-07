@@ -16,35 +16,76 @@ interface HeaderNavProps {
   username: string | null;
 }
 
+/** Local, client-owned view of the sign-in state that the header renders. */
+interface AuthDisplayState {
+  isAuthenticated: boolean;
+  username: string | null;
+}
+
 /**
  * Client-side navigation shell.
  *
- * The session state is resolved on the server (see Header) and passed in as
- * props, so this component only owns interactivity: the mobile menu toggle
- * and the sign-out action.
+ * The session state is first resolved on the server (see Header) and passed
+ * in as props, so the very first paint is correct with no flash of the wrong
+ * button. From then on, this component owns the *live* state itself: it
+ * subscribes to `supabase.auth.onAuthStateChange` and updates local React
+ * state directly whenever a SIGNED_IN, SIGNED_OUT, or USER_UPDATED event
+ * fires, so the header flips instantly (log out, sign in, sign up) without
+ * ever depending on a server round-trip or a manual page refresh.
  *
- * It also subscribes to Supabase's auth events directly. This is a safety
- * net: `router.refresh()` calls made elsewhere (login/signup pages) normally
- * re-render this Server Component with fresh props, but if one of those
- * calls is ever missed, delayed, or dropped by the client-side route cache,
- * this listener independently notices the SIGNED_IN / SIGNED_OUT event and
- * forces a refresh, so the nav can never get stuck showing the wrong state.
+ * A `router.refresh()` is still fired alongside those updates, but only to
+ * reconcile secondary server-rendered data (like the profile username) in
+ * the background — the visible header state never waits on it.
  */
 export function HeaderNav({ isAuthenticated, username }: HeaderNavProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [authState, setAuthState] = useState<AuthDisplayState>({
+    isAuthenticated,
+    username,
+  });
   const router = useRouter();
+
+  // Keep local state in sync with fresh server props (e.g. after a hard
+  // navigation or an unrelated router.refresh()), without overriding it on
+  // every render.
+  useEffect(() => {
+    setAuthState({ isAuthenticated, username });
+  }, [isAuthenticated, username]);
 
   useEffect(() => {
     const supabase = createClient();
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event) => {
-      // Re-fetch this Server Component's props whenever the sign-in state
-      // actually flips, so the nav can never drift out of sync with cookies.
-      if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
-        router.refresh();
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") {
+        setAuthState({ isAuthenticated: false, username: null });
+      } else if (
+        event === "SIGNED_IN" ||
+        event === "USER_UPDATED" ||
+        event === "TOKEN_REFRESHED"
+      ) {
+        const user = session?.user ?? null;
+        setAuthState({
+          isAuthenticated: user !== null,
+          // Optimistic display name from the auth payload itself, so the
+          // header never waits on a database round-trip to flip. The
+          // background refresh below reconciles this with the real
+          // `profiles.username` once the server has re-rendered.
+          username: user
+            ? ((user.user_metadata?.username as string | undefined) ??
+              user.email?.split("@")[0] ??
+              "Account")
+            : null,
+        });
+      } else {
+        return;
       }
+
+      // Re-sync server-rendered data (like the DB profile lookup) in the
+      // background. The header itself already reflects the new state above,
+      // so this is not on the critical path for the visual update.
+      router.refresh();
     });
 
     return () => subscription.unsubscribe();
@@ -57,13 +98,15 @@ export function HeaderNav({ isAuthenticated, username }: HeaderNavProps) {
     // that the browser client manages, so the server will see a logged-out
     // user on the very next request.
     await supabase.auth.signOut();
+    // Flip the header immediately rather than waiting for the
+    // onAuthStateChange event or a navigation to land.
+    setAuthState({ isAuthenticated: false, username: null });
     setIsMenuOpen(false);
     setIsSigningOut(false);
-    // Send the user home and refresh so the server re-reads the (now empty)
-    // session and every Server Component (including this nav) updates.
     router.push("/");
-    router.refresh();
   }
+
+  const { isAuthenticated: isSignedIn, username: displayName } = authState;
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
@@ -86,9 +129,9 @@ export function HeaderNav({ isAuthenticated, username }: HeaderNavProps) {
         </nav>
 
         <div className="hidden items-center gap-4 md:flex">
-          {isAuthenticated ? (
+          {isSignedIn ? (
             <>
-              <span className="text-sm font-medium text-foreground">{username}</span>
+              <span className="text-sm font-medium text-foreground">{displayName}</span>
               <Button
                 variant="secondary"
                 onClick={handleSignOut}
@@ -129,9 +172,9 @@ export function HeaderNav({ isAuthenticated, username }: HeaderNavProps) {
               </li>
             ))}
             <li className="pt-2">
-              {isAuthenticated ? (
+              {isSignedIn ? (
                 <div className="flex flex-col gap-2">
-                  <span className="px-3 text-sm font-medium text-foreground">{username}</span>
+                  <span className="px-3 text-sm font-medium text-foreground">{displayName}</span>
                   <Button
                     variant="secondary"
                     className="w-full"

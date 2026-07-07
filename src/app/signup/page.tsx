@@ -79,16 +79,20 @@ export default function SignupPage() {
       return;
     }
 
-    // Success with an active session: clear the form, then navigate.
-    // `router.push` moves us to /markets, and `router.refresh()` immediately
-    // after discards Next.js's cached copy of every Server Component on the
-    // page — including the session-aware nav — and re-renders them using the
-    // session cookie Supabase just set, so the signed-in state shows instantly.
+    // Success with an active session: clear the form, then navigate
+    // immediately. We deliberately call only `router.push` here — the
+    // session-aware header updates itself instantly from the
+    // `onAuthStateChange` event (see HeaderNav), so it no longer needs a
+    // paired `router.refresh()` to reflect the new session. Firing both
+    // calls back-to-back used to race Next.js's router (the refresh's
+    // fetch could contend with the navigation's own fetch), which was
+    // exactly what produced the "stuck until you switch tabs" symptom —
+    // a stalled router transition that only unstuck itself when a window
+    // focus event nudged Next.js to revalidate.
     setUsername("");
     setEmail("");
     setPassword("");
     router.push("/markets");
-    router.refresh();
   }
 
   return (
