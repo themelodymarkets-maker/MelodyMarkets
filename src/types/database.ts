@@ -275,6 +275,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_market_overview: {
+        Args: never
+        Returns: {
+          artist_id: string
+          current_price: number
+          genre: string
+          image_url: string
+          listeners: number
+          name: string
+          reference_price: number
+          slug: string
+        }[]
+      }
       get_token_balance: { Args: { p_user_id: string }; Returns: number }
     }
     Enums: {
@@ -422,3 +435,7 @@ export type Holding = Tables<"holdings">
 export type LedgerEntry = Tables<"token_ledger">
 export type PriceSnapshot = Tables<"price_snapshots">
 export type Profile = Tables<"profiles">
+
+/** Row shape returned by the `get_market_overview` RPC (see its migration). */
+export type MarketOverviewRow =
+  Database["public"]["Functions"]["get_market_overview"]["Returns"][number]

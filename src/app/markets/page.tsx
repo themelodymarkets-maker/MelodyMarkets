@@ -1,75 +1,59 @@
 import { PageShell } from "@/components/layout/PageShell";
-import { Card } from "@/components/ui/Card";
-import { ComingSoonCard } from "@/components/ui/ComingSoonCard";
+import { MarketsExplorer } from "@/components/markets/MarketsExplorer";
+import type { MarketRowData } from "@/components/markets/types";
 import { createClient } from "@/lib/supabase/server";
 
-interface MarketListItem {
-  artistId: string;
-  name: string;
-  /** Spot price in tokens per share: token_reserve / share_reserve. */
-  price: number;
-}
-
 /**
- * Minimal read of current market state, just to prove artist ingestion data
- * flows all the way to the page. The full trading UI (charts, buy/sell,
- * images, genres, etc.) lands in the next milestone.
+ * Server Component data fetch: the only place this page talks to Supabase.
+ * A single RPC call (`get_market_overview`, defined in
+ * supabase/migrations/20260708120000_add_market_overview_and_public_reads.sql)
+ * joins active artists, their market, and a 24h-ago price_snapshots lookup
+ * server-side, so the page never has to stitch multiple tables together (or
+ * make N+1 requests) in the browser.
+ *
+ * Postgres `numeric` columns are serialized as strings over the wire (to
+ * avoid float precision loss), so every numeric field is explicitly cast
+ * with `Number(...)` here, before any plain data crosses into client
+ * components.
+ *
+ * A thrown error here is caught by the nearest `error.tsx` boundary
+ * (`app/markets/error.tsx`); Next.js renders `app/markets/loading.tsx`
+ * automatically while this await is in flight.
  */
-async function getMarketListItems(): Promise<MarketListItem[]> {
+async function getMarketRows(): Promise<MarketRowData[]> {
   const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_market_overview");
 
-  const [{ data: markets, error: marketsError }, { data: artists, error: artistsError }] =
-    await Promise.all([
-      supabase.from("markets").select("artist_id, token_reserve, share_reserve"),
-      supabase.from("artists").select("id, name"),
-    ]);
-
-  if (marketsError || artistsError || !markets || !artists) {
-    return [];
+  if (error) {
+    throw new Error(`Failed to load market overview: ${error.message}`);
   }
 
-  const nameByArtistId = new Map(artists.map((artist) => [artist.id, artist.name]));
-
-  return markets
-    .map((market) => ({
-      artistId: market.artist_id,
-      name: nameByArtistId.get(market.artist_id) ?? "Unknown artist",
-      price: Number(market.token_reserve) / Number(market.share_reserve),
-    }))
-    .sort((a, b) => b.price - a.price);
+  return (data ?? []).map((row) => ({
+    artistId: row.artist_id,
+    slug: row.slug,
+    name: row.name,
+    genre: row.genre,
+    imageUrl: row.image_url,
+    listeners: row.listeners === null ? null : Number(row.listeners),
+    currentPrice: Number(row.current_price),
+    referencePrice: row.reference_price === null ? null : Number(row.reference_price),
+  }));
 }
 
 export default async function MarketsPage() {
-  const markets = await getMarketListItems();
-
-  if (markets.length === 0) {
-    return (
-      <PageShell>
-        <ComingSoonCard
-          title="Markets"
-          description="Live artist prices and trading will show up here soon."
-        />
-      </PageShell>
-    );
-  }
+  const rows = await getMarketRows();
 
   return (
     <PageShell>
-      <div className="mx-auto w-full max-w-lg">
-        <h1 className="text-2xl font-semibold text-foreground">Markets</h1>
-        <p className="mt-2 text-sm text-muted">
-          Full trading UI is coming in the next milestone -- current prices below.
-        </p>
-        <Card className="mt-6 divide-y divide-border p-0">
-          {markets.map((market) => (
-            <div key={market.artistId} className="flex items-center justify-between px-6 py-4">
-              <span className="font-medium text-foreground">{market.name}</span>
-              <span className="text-accent-gradient font-semibold">
-                {market.price.toFixed(2)} tokens
-              </span>
-            </div>
-          ))}
-        </Card>
+      <div className="mx-auto w-full max-w-5xl">
+        {/*
+          Server/Client boundary: everything above this comment ran on the
+          server. `MarketsExplorer` below is a Client Component -- search,
+          sort, and the Supabase Realtime subscription all need browser
+          state/effects -- and it receives the already-fetched rows as plain
+          serializable props, with no data fetching of its own on mount.
+        */}
+        <MarketsExplorer initialRows={rows} />
       </div>
     </PageShell>
   );
