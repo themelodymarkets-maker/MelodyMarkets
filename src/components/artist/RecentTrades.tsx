@@ -1,19 +1,58 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
-import { formatRelativeTime, formatTokenAmount } from "@/lib/format";
+import { formatRelativeTime, formatShares, formatTokenAmount } from "@/lib/format";
+import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
-import type { Trade } from "@/types/database";
+import type { Tables, Trade } from "@/types/database";
 
 interface RecentTradesProps {
-  trades: Trade[];
+  artistId: string;
+  /** Newest-first trade tape fetched by the server for the first paint. */
+  initialTrades: Trade[];
 }
 
+const MAX_ROWS = 20;
+
 /**
- * Server Component: the latest trade tape for an artist, already fetched and
- * ordered newest-first by the page (see `src/app/artist/[slug]/page.tsx`).
- * No trade execution exists in the app yet, so this table is empty for every
- * artist today -- the empty state below is the common case, not an edge case.
+ * Client Component: the artist's live trade tape. Seeded with the trades the
+ * server already fetched (see `src/app/artist/[slug]/page.tsx`), then keeps
+ * itself current by subscribing to Realtime INSERTs on `trades` for this
+ * artist -- so a fill from anyone (this user or another) appears at the top
+ * without a reload. New rows are de-duplicated against the seed/optimistic
+ * updates by trade id.
  */
-export function RecentTrades({ trades }: RecentTradesProps) {
+export function RecentTrades({ artistId, initialTrades }: RecentTradesProps) {
+  const [trades, setTrades] = useState<Trade[]>(initialTrades);
+
+  useEffect(() => {
+    setTrades(initialTrades);
+  }, [initialTrades]);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    const channel = supabase
+      .channel(`artist-trades-${artistId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "trades", filter: `artist_id=eq.${artistId}` },
+        (payload) => {
+          const inserted = payload.new as Tables<"trades">;
+          setTrades((current) => {
+            if (current.some((t) => t.id === inserted.id)) return current;
+            return [inserted, ...current].slice(0, MAX_ROWS);
+          });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [artistId]);
+
   return (
     <Card className="mt-6 overflow-hidden p-0">
       <div className="border-b border-border px-6 py-4">
@@ -24,7 +63,7 @@ export function RecentTrades({ trades }: RecentTradesProps) {
         <div className="px-6 py-10 text-center">
           <p className="text-sm font-medium text-foreground">No trades yet</p>
           <p className="mt-1 text-sm text-muted">
-            Trade activity for this artist will show up here once trading unlocks.
+            Be the first to trade this artist — activity shows up here in real time.
           </p>
         </div>
       ) : (
@@ -53,7 +92,7 @@ function TradeRow({ trade }: { trade: Trade }) {
       </span>
 
       <span className="min-w-0 flex-1 truncate text-sm text-foreground">
-        <span className="font-medium tabular-nums">{formatTokenAmount(Number(trade.shares))}</span>{" "}
+        <span className="font-medium tabular-nums">{formatShares(Number(trade.shares))}</span>{" "}
         <span className="text-muted">shares @</span>{" "}
         <span className="font-medium tabular-nums">{formatTokenAmount(Number(trade.price_per_share))}</span>
       </span>

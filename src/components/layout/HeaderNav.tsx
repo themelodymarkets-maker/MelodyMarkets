@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Logo } from "@/components/layout/Logo";
 import { LinkButton } from "@/components/ui/LinkButton";
 import { Button } from "@/components/ui/Button";
+import { TokenBalanceChip } from "@/components/layout/TokenBalanceChip";
 import { NAV_LINKS } from "@/lib/nav-links";
 import { createClient } from "@/lib/supabase/client";
 
@@ -131,6 +132,7 @@ export function HeaderNav({ isAuthenticated, username }: HeaderNavProps) {
         <div className="hidden items-center gap-4 md:flex">
           {isSignedIn ? (
             <>
+              <TokenBalanceChip />
               <span className="text-sm font-medium text-foreground">{displayName}</span>
               <Button
                 variant="secondary"
@@ -174,7 +176,10 @@ export function HeaderNav({ isAuthenticated, username }: HeaderNavProps) {
             <li className="pt-2">
               {isSignedIn ? (
                 <div className="flex flex-col gap-2">
-                  <span className="px-3 text-sm font-medium text-foreground">{displayName}</span>
+                  <div className="flex items-center justify-between gap-2 px-3">
+                    <span className="text-sm font-medium text-foreground">{displayName}</span>
+                    <TokenBalanceChip />
+                  </div>
                   <Button
                     variant="secondary"
                     className="w-full"

@@ -275,6 +275,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      execute_trade: {
+        Args: {
+          p_amount: number
+          p_artist_id: string
+          p_min_receive: number
+          p_side: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       get_market_overview: {
         Args: never
         Returns: {

@@ -8,6 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "server": "node server.js"
   },
   "dependencies": {
@@ -29,6 +31,7 @@
     "eslint": "^9.39.4",
     "eslint-config-next": "^15.3.5",
     "tailwindcss": "^4.3.2",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.10"
   }
 }

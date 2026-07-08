@@ -54,3 +54,66 @@ body {
   background-color: var(--color-background);
   color: var(--color-foreground);
 }
+
+/* ---------------------------------------------------------------------------
+ * Gamified trade feedback: confetti burst + success pulse + toast entrance.
+ * Kept as plain CSS keyframes so components can opt in via a class/inline
+ * style without pulling in an animation dependency. All respect
+ * prefers-reduced-motion below.
+ * ------------------------------------------------------------------------- */
+@keyframes mm-confetti-fall {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(var(--mm-confetti-x, 0), 140px, 0)
+      rotate(var(--mm-confetti-r, 360deg));
+    opacity: 0;
+  }
+}
+
+.mm-confetti-piece {
+  position: absolute;
+  top: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+  animation: mm-confetti-fall 900ms cubic-bezier(0.25, 0.75, 0.45, 1) forwards;
+}
+
+@keyframes mm-pulse-flash {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 14px rgba(34, 211, 238, 0);
+  }
+}
+
+.mm-pulse {
+  animation: mm-pulse-flash 700ms ease-out;
+}
+
+@keyframes mm-toast-in {
+  0% {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.mm-toast-enter {
+  animation: mm-toast-in 220ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mm-confetti-piece,
+  .mm-pulse,
+  .mm-toast-enter {
+    animation: none;
+  }
+}

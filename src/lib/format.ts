@@ -16,6 +16,20 @@ export function formatTokenAmount(value: number): string {
   return tokenAmountFormatter.format(value);
 }
 
+const shareAmountFormatter = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 4,
+});
+
+/**
+ * Formats a share quantity with up to 4 decimals (shares are fractional in the
+ * AMM), e.g. 30.2835828 -> "30.2836". Falls back to "--" for non-finite input.
+ */
+export function formatShares(value: number): string {
+  if (!Number.isFinite(value)) return "--";
+  return shareAmountFormatter.format(value);
+}
+
 const compactNumberFormatter = new Intl.NumberFormat("en-US", {
   notation: "compact",
   maximumFractionDigits: 1,

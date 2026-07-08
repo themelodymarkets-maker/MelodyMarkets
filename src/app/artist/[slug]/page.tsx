@@ -2,13 +2,12 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PageShell } from "@/components/layout/PageShell";
-import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ArtistHeader } from "@/components/artist/ArtistHeader";
 import { MarketStats } from "@/components/artist/MarketStats";
 import { PriceDisplay } from "@/components/artist/PriceDisplay";
 import { RecentTrades } from "@/components/artist/RecentTrades";
-import { formatTokenAmount } from "@/lib/format";
+import { TradePanel } from "@/components/artist/TradePanel";
 import { computeSpotPrice } from "@/lib/market";
 import { createClient } from "@/lib/supabase/server";
 import type { Trade } from "@/types/database";
@@ -26,6 +25,7 @@ interface ArtistDetail {
   playcount: number | null;
   currentPrice: number;
   referencePrice: number | null;
+  tokenReserve: number;
   shareReserve: number;
   marketCreatedAt: string;
   snapshotCount: number;
@@ -103,6 +103,7 @@ const getArtistDetail = cache(async (slug: string): Promise<ArtistDetail | null>
     playcount: artist.playcount,
     currentPrice: computeSpotPrice(market),
     referencePrice: referencePriceRaw === null ? null : Number(referencePriceRaw),
+    tokenReserve: Number(market.token_reserve),
     shareReserve: Number(market.share_reserve),
     marketCreatedAt: market.created_at,
     snapshotCount: snapshotCountResult.count ?? 0,
@@ -128,6 +129,13 @@ export default async function ArtistPage({ params }: ArtistPageProps) {
   if (!artist) {
     notFound();
   }
+
+  // Resolve the session on the server so the trade panel renders the correct
+  // signed-in / signed-out state on the first paint (no flash of the gate).
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const marketCap = artist.currentPrice * artist.shareReserve;
 
@@ -156,11 +164,17 @@ export default async function ArtistPage({ params }: ArtistPageProps) {
 
             <PriceHistoryCard snapshotCount={artist.snapshotCount} />
 
-            <RecentTrades trades={artist.trades} />
+            <RecentTrades artistId={artist.artistId} initialTrades={artist.trades} />
           </div>
 
           <div className="flex flex-col gap-6">
-            <TradeCard currentPrice={artist.currentPrice} />
+            <TradePanel
+              artistId={artist.artistId}
+              artistName={artist.name}
+              initialTokenReserve={artist.tokenReserve}
+              initialShareReserve={artist.shareReserve}
+              isAuthenticated={user !== null}
+            />
             <MarketStats
               marketCap={marketCap}
               snapshotCount={artist.snapshotCount}
@@ -189,33 +203,6 @@ function PriceHistoryCard({ snapshotCount }: { snapshotCount: number }) {
         </p>
         <p className="text-xs text-muted">The interactive chart arrives with live price data.</p>
       </div>
-    </Card>
-  );
-}
-
-/** Sidebar placeholder: shows the live-at-load price, but trading itself isn't wired up yet. */
-function TradeCard({ currentPrice }: { currentPrice: number }) {
-  return (
-    <Card>
-      <h2 className="text-xs font-semibold tracking-wide text-muted uppercase">Trade</h2>
-      <p className="mt-3 text-2xl font-semibold text-foreground tabular-nums">
-        {formatTokenAmount(currentPrice)}
-      </p>
-      <p className="text-xs text-muted">tokens / share</p>
-
-      <div className="mt-5 flex gap-3">
-        <Button variant="primary" className="flex-1 disabled:cursor-not-allowed disabled:opacity-50" disabled>
-          Buy
-        </Button>
-        <Button
-          variant="secondary"
-          className="flex-1 disabled:cursor-not-allowed disabled:opacity-50"
-          disabled
-        >
-          Sell
-        </Button>
-      </div>
-      <p className="mt-3 text-center text-xs text-muted">Trading unlocks soon</p>
     </Card>
   );
 }
