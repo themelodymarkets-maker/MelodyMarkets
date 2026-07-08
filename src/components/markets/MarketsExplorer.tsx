@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Card } from "@/components/ui/Card";
-import { computePercentChange } from "@/lib/format";
+import { computeSpotPrice, get24hPriceChange } from "@/lib/market";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/types/database";
 import { cn } from "@/lib/utils";
@@ -45,7 +45,7 @@ export function MarketsExplorer({ initialRows }: MarketsExplorerProps) {
         { event: "UPDATE", schema: "public", table: "markets" },
         (payload) => {
           const updatedMarket = payload.new as Tables<"markets">;
-          const nextPrice = Number(updatedMarket.token_reserve) / Number(updatedMarket.share_reserve);
+          const nextPrice = computeSpotPrice(updatedMarket);
 
           setRows((currentRows) =>
             currentRows.map((row) =>
@@ -153,7 +153,7 @@ function getSortValue(row: MarketRowData, field: SortField): number {
     case "price":
       return row.currentPrice;
     case "change":
-      return computePercentChange(row.referencePrice ?? row.currentPrice, row.currentPrice).percent;
+      return get24hPriceChange(row).percent;
     case "popularity":
       return row.listeners ?? 0;
   }

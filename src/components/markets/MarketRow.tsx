@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { PriceChangePill } from "@/components/ui/PriceChangePill";
-import { computePercentChange, formatCompactNumber, formatTokenAmount } from "@/lib/format";
+import { formatCompactNumber, formatTokenAmount } from "@/lib/format";
+import { get24hPriceChange } from "@/lib/market";
 import { cn } from "@/lib/utils";
 import { MARKET_COLUMN_WIDTHS } from "./columns";
 import type { MarketRowData } from "./types";
@@ -37,7 +38,7 @@ export function MarketRow({ row }: MarketRowProps) {
     return () => clearTimeout(timeoutId);
   }, [row.currentPrice]);
 
-  const { percent } = computePercentChange(row.referencePrice ?? row.currentPrice, row.currentPrice);
+  const { percent } = get24hPriceChange(row);
 
   return (
     <Link

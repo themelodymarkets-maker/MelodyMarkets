@@ -59,3 +59,31 @@ export function formatPercent(percent: number): string {
   const sign = percent > 0 ? "+" : percent < 0 ? "-" : "";
   return `${sign}${Math.abs(percent).toFixed(2)}%`;
 }
+
+const relativeTimeFormatter = new Intl.RelativeTimeFormat("en-US", { numeric: "auto" });
+
+/** Largest-to-smallest units `formatRelativeTime` checks, each with its length in milliseconds. */
+const RELATIVE_TIME_UNITS: Array<{ unit: Intl.RelativeTimeFormatUnit; ms: number }> = [
+  { unit: "year", ms: 365 * 24 * 60 * 60 * 1000 },
+  { unit: "month", ms: 30 * 24 * 60 * 60 * 1000 },
+  { unit: "day", ms: 24 * 60 * 60 * 1000 },
+  { unit: "hour", ms: 60 * 60 * 1000 },
+  { unit: "minute", ms: 60 * 1000 },
+];
+
+/**
+ * Formats an ISO timestamp as a short relative string, e.g. "5 minutes ago"
+ * or "in 2 hours". Anything under a minute (in either direction) reads as
+ * "just now" rather than "0 minutes ago".
+ */
+export function formatRelativeTime(isoTimestamp: string): string {
+  const diffMs = new Date(isoTimestamp).getTime() - Date.now();
+
+  for (const { unit, ms } of RELATIVE_TIME_UNITS) {
+    if (Math.abs(diffMs) >= ms) {
+      return relativeTimeFormatter.format(Math.round(diffMs / ms), unit);
+    }
+  }
+
+  return "just now";
+}
