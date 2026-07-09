@@ -7,6 +7,7 @@ import { formatCompactNumber, formatTokenAmount } from "@/lib/format";
 import { get24hPriceChange } from "@/lib/market";
 import { cn } from "@/lib/utils";
 import { MARKET_COLUMN_WIDTHS } from "./columns";
+import { Sparkline } from "./Sparkline";
 import type { MarketRowData } from "./types";
 
 /** How long the green/red background flash lingers after a price update. */
@@ -68,6 +69,12 @@ export function MarketRow({ row }: MarketRowProps) {
         )}
       >
         {formatCompactNumber(row.listeners)}
+      </span>
+
+      <span
+        className={cn(MARKET_COLUMN_WIDTHS.sparkline, "hidden shrink-0 justify-end sm:flex")}
+      >
+        <Sparkline prices={row.sparkline} />
       </span>
 
       <span

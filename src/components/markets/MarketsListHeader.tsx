@@ -10,6 +10,7 @@ export function MarketsListHeader() {
       <span className={MARKET_COLUMN_WIDTHS.avatar} aria-hidden="true" />
       <span className="flex-1">Artist</span>
       <span className={`${MARKET_COLUMN_WIDTHS.listeners} text-right`}>Listeners</span>
+      <span className={`${MARKET_COLUMN_WIDTHS.sparkline} text-right`}>Trend</span>
       <span className={`${MARKET_COLUMN_WIDTHS.price} text-right`}>Price</span>
       <span className={`${MARKET_COLUMN_WIDTHS.change} text-right`}>24h</span>
     </div>

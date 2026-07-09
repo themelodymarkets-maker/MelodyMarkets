@@ -42,7 +42,42 @@ Colors, fonts, and border radii are defined once as Tailwind theme tokens in
 `src/app/globals.css` (via the `@theme` block) rather than hard-coded in components. This keeps
 the dark theme, accent gradient, and gain/loss colors consistent as new pages are added.
 
+## Price history & charts
+
+`price_snapshots` is the single, append-only source of truth for every chart in the app (see
+its migration in `supabase/migrations`). Rows are written from exactly two places, and nowhere
+else:
+
+- `execute_trade` (`source: 'trade'`) — one row per executed trade, at the market's new price.
+- `/api/cron/snapshot` (`source: 'cron'`) — one row per active market, every hour.
+
+No code path is allowed to interpolate, backfill, or otherwise fabricate a `price_snapshots`
+row. Charts (`src/components/artist/PriceChart.tsx`, the `/markets` sparklines) render exactly
+the rows that exist; when an artist has too little history to plot a meaningful line, the UI
+says so honestly instead of inventing data. Range fetches beyond ~500 real rows are downsampled
+by bucketing time and keeping the *last real row* in each bucket (never averaged or
+interpolated) — see `src/lib/price-history.ts`.
+
+## Cron jobs
+
+Scheduled server-side jobs live under `src/app/api/cron/*` and share one auth guard,
+`isAuthorizedCronRequest` (`src/lib/cron-auth.ts`): every request must carry
+`Authorization: Bearer <CRON_SECRET>`, checked with a constant-time comparison.
+
+Schedules are declared in `vercel.json`. When a `CRON_SECRET` environment variable is set on the
+Vercel project, Vercel's own scheduler automatically attaches
+`Authorization: Bearer <CRON_SECRET>` to every request it makes to a cron path — the exact same
+header format `isAuthorizedCronRequest` already expects — so no separate code path is needed to
+accept "Vercel's" auth versus anyone else's; presenting the correct secret is what authenticates
+the request, regardless of caller. (Vercel-triggered requests are also identifiable, if ever
+useful, by a `vercel-cron/1.0` `User-Agent` and an `x-vercel-cron-schedule` header, but neither
+of those is trusted for authentication since they aren't signed and could be forged by any
+caller — the bearer secret is the only thing that actually proves the request came from a holder
+of `CRON_SECRET`.)
+
 ## What's intentionally not here yet
 
-This foundation deliberately excludes a database, authentication, charts, and any trading
-logic. Those will be layered on top of this structure in future work.
+A database (Supabase/Postgres), authentication, price charts, and the core AMM trading logic
+have since been layered on top of this original foundation — see `supabase/migrations`,
+`src/lib/supabase`, `src/components/artist/PriceChart.tsx`, and
+`supabase/migrations/20260708160000_create_execute_trade_function.sql` respectively.

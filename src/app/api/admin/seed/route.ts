@@ -1,7 +1,7 @@
 import "server-only";
 
-import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
+import { isAuthorizedCronRequest } from "@/lib/cron-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getTopArtistsWithDetails, LastfmError } from "@/lib/lastfm";
 import { slugify, uniqueSlug } from "@/lib/slug";
@@ -40,22 +40,6 @@ function computeInitialPrice(listeners: number): number {
   return Math.min(MAX_INITIAL_PRICE, Math.max(MIN_INITIAL_PRICE, rawPrice));
 }
 
-/** Constant-time check of `Authorization: Bearer <CRON_SECRET>`. */
-function isAuthorized(request: Request): boolean {
-  const expectedSecret = process.env.CRON_SECRET;
-  if (!expectedSecret) return false;
-
-  const header = request.headers.get("authorization") ?? "";
-  const [scheme, token] = header.split(" ");
-  if (scheme !== "Bearer" || !token) return false;
-
-  const provided = Buffer.from(token);
-  const expected = Buffer.from(expectedSecret);
-  // timingSafeEqual throws if lengths differ, so compare lengths first.
-  if (provided.length !== expected.length) return false;
-  return timingSafeEqual(provided, expected);
-}
-
 interface SeedSummary {
   artistsCreated: number;
   artistsUpdated: number;
@@ -73,7 +57,7 @@ interface SeedSummary {
  * that).
  */
 export async function POST(request: Request) {
-  if (!isAuthorized(request)) {
+  if (!isAuthorizedCronRequest(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

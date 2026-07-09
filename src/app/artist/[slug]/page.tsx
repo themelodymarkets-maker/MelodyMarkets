@@ -5,12 +5,17 @@ import { PageShell } from "@/components/layout/PageShell";
 import { Card } from "@/components/ui/Card";
 import { ArtistHeader } from "@/components/artist/ArtistHeader";
 import { MarketStats } from "@/components/artist/MarketStats";
+import { PriceChart } from "@/components/artist/PriceChart";
 import { PriceDisplay } from "@/components/artist/PriceDisplay";
 import { RecentTrades } from "@/components/artist/RecentTrades";
 import { TradePanel } from "@/components/artist/TradePanel";
 import { computeSpotPrice } from "@/lib/market";
+import { fetchPriceHistory, type PriceHistoryRange, type PricePoint } from "@/lib/price-history";
 import { createClient } from "@/lib/supabase/server";
 import type { Trade } from "@/types/database";
+
+/** The range `PriceChart` renders on first paint, fetched server-side. */
+const DEFAULT_PRICE_HISTORY_RANGE: PriceHistoryRange = "1d";
 
 interface ArtistPageProps {
   params: Promise<{ slug: string }>;
@@ -30,6 +35,7 @@ interface ArtistDetail {
   marketCreatedAt: string;
   snapshotCount: number;
   trades: Trade[];
+  priceHistory: PricePoint[];
 }
 
 /**
@@ -64,33 +70,35 @@ const getArtistDetail = cache(async (slug: string): Promise<ArtistDetail | null>
   const market = artist.markets;
   const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-  const [recentSnapshot, oldestSnapshot, snapshotCountResult, tradesResult] = await Promise.all([
-    supabase
-      .from("price_snapshots")
-      .select("price")
-      .eq("artist_id", artist.id)
-      .lte("created_at", twentyFourHoursAgo)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("price_snapshots")
-      .select("price")
-      .eq("artist_id", artist.id)
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("price_snapshots")
-      .select("*", { count: "exact", head: true })
-      .eq("artist_id", artist.id),
-    supabase
-      .from("trades")
-      .select("*")
-      .eq("artist_id", artist.id)
-      .order("created_at", { ascending: false })
-      .limit(20),
-  ]);
+  const [recentSnapshot, oldestSnapshot, snapshotCountResult, tradesResult, priceHistory] =
+    await Promise.all([
+      supabase
+        .from("price_snapshots")
+        .select("price")
+        .eq("artist_id", artist.id)
+        .lte("created_at", twentyFourHoursAgo)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("price_snapshots")
+        .select("price")
+        .eq("artist_id", artist.id)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("price_snapshots")
+        .select("*", { count: "exact", head: true })
+        .eq("artist_id", artist.id),
+      supabase
+        .from("trades")
+        .select("*")
+        .eq("artist_id", artist.id)
+        .order("created_at", { ascending: false })
+        .limit(20),
+      fetchPriceHistory(supabase, artist.id, DEFAULT_PRICE_HISTORY_RANGE),
+    ]);
 
   const referencePriceRaw = recentSnapshot.data?.price ?? oldestSnapshot.data?.price ?? null;
 
@@ -108,6 +116,7 @@ const getArtistDetail = cache(async (slug: string): Promise<ArtistDetail | null>
     marketCreatedAt: market.created_at,
     snapshotCount: snapshotCountResult.count ?? 0,
     trades: tradesResult.data ?? [],
+    priceHistory,
   };
 });
 
@@ -162,7 +171,13 @@ export default async function ArtistPage({ params }: ArtistPageProps) {
               />
             </Card>
 
-            <PriceHistoryCard snapshotCount={artist.snapshotCount} />
+            <PriceChart
+              artistId={artist.artistId}
+              marketCreatedAt={artist.marketCreatedAt}
+              initialRange={DEFAULT_PRICE_HISTORY_RANGE}
+              initialPoints={artist.priceHistory}
+              initialTotalSnapshotCount={artist.snapshotCount}
+            />
 
             <RecentTrades artistId={artist.artistId} initialTrades={artist.trades} />
           </div>
@@ -184,25 +199,5 @@ export default async function ArtistPage({ params }: ArtistPageProps) {
         </div>
       </div>
     </PageShell>
-  );
-}
-
-/**
- * Bounded placeholder for the price chart. `price_snapshots` is the only
- * source of chart data (see that table's migration) and is never fabricated,
- * so until a charting library is wired up this card is honest about what it
- * has (a snapshot count) rather than faking a chart.
- */
-function PriceHistoryCard({ snapshotCount }: { snapshotCount: number }) {
-  return (
-    <Card className="mt-6">
-      <h2 className="text-lg font-semibold text-foreground">Price history</h2>
-      <div className="mt-4 flex h-48 flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border px-6 text-center">
-        <p className="text-sm font-medium text-foreground">
-          {snapshotCount.toLocaleString()} price snapshot{snapshotCount === 1 ? "" : "s"} recorded
-        </p>
-        <p className="text-xs text-muted">The interactive chart arrives with live price data.</p>
-      </div>
-    </Card>
   );
 }
