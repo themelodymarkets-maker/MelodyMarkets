@@ -64,8 +64,12 @@ Scheduled server-side jobs live under `src/app/api/cron/*` and share one auth gu
 `isAuthorizedCronRequest` (`src/lib/cron-auth.ts`): every request must carry
 `Authorization: Bearer <CRON_SECRET>`, checked with a constant-time comparison.
 
-Schedules are declared in `vercel.json`. When a `CRON_SECRET` environment variable is set on the
-Vercel project, Vercel's own scheduler automatically attaches
+Schedules are declared in `vercel.json`. The snapshot job runs once daily (rather than hourly) --
+Vercel's Hobby plan only allows a cron job to fire once per day per project, and a deploy is
+rejected outright if `vercel.json` declares a schedule that fires more often than that, so keep
+any future cron schedule changes Hobby-plan-compatible unless the project is on Pro. When a
+`CRON_SECRET` environment variable is set on the Vercel project, Vercel's own scheduler
+automatically attaches
 `Authorization: Bearer <CRON_SECRET>` to every request it makes to a cron path — the exact same
 header format `isAuthorizedCronRequest` already expects — so no separate code path is needed to
 accept "Vercel's" auth versus anyone else's; presenting the correct secret is what authenticates

@@ -1,6 +1,6 @@
 -- Lets clients subscribe to postgres_changes INSERTs on price_snapshots, so
 -- the price chart can append a live point the moment a real trade (or the
--- hourly cron) records one -- rather than ever fabricating one client-side.
+-- daily cron) records one -- rather than ever fabricating one client-side.
 --
 -- `add table` has no `if not exists` variant, so guard it explicitly to keep
 -- this migration re-run safe (same pattern as the `markets` publication add

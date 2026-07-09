@@ -37,7 +37,8 @@ interface ActiveMarketRow {
 /**
  * GET /api/cron/snapshot
  *
- * Hourly (see `vercel.json`) point-in-time price recording job: for every
+ * Daily (see `vercel.json` -- Vercel's Hobby plan only allows one cron run
+ * per day per project) point-in-time price recording job: for every
  * active artist's market, inserts exactly one `price_snapshots` row at the
  * market's current spot price (source: 'cron'). This -- together with the
  * 'trade'-sourced rows written by `execute_trade` -- is the entire, honest

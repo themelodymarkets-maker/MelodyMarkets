@@ -50,7 +50,7 @@ const openedDateFormatter = new Intl.DateTimeFormat("en-US", {
  * (fetched server-side for `initialRange`, and on demand for every other tab
  * via `/api/artists/:artistId/price-history`) -- never an interpolated or
  * fabricated point. New points are appended the moment a real row is
- * INSERTed (a trade or the hourly cron job), via a Realtime subscription on
+ * INSERTed (a trade or the daily cron job), via a Realtime subscription on
  * `price_snapshots`, never via a client-side guess at "what the price is
  * now".
  */
@@ -105,7 +105,7 @@ export function PriceChart({
   }
 
   // Live updates: append every new real price_snapshots row for this artist
-  // (written by a trade or the hourly cron) to every cached range -- the new
+  // (written by a trade or the daily cron) to every cached range -- the new
   // row's timestamp is "now", so it always falls inside every range's window.
   useEffect(() => {
     const supabase = createClient();
