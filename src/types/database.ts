@@ -298,6 +298,17 @@ export type Database = {
           slug: string
         }[]
       }
+      get_portfolio_summary: {
+        Args: { p_user_id: string }
+        Returns: {
+          holdings_value: number
+          return_pct: number
+          token_balance: number
+          total_credited: number
+          total_value: number
+          user_id: string
+        }[]
+      }
       get_token_balance: { Args: { p_user_id: string }; Returns: number }
     }
     Enums: {
@@ -449,3 +460,7 @@ export type Profile = Tables<"profiles">
 /** Row shape returned by the `get_market_overview` RPC (see its migration). */
 export type MarketOverviewRow =
   Database["public"]["Functions"]["get_market_overview"]["Returns"][number]
+
+/** Row shape returned by the `get_portfolio_summary` RPC (see its migration). */
+export type PortfolioSummaryRow =
+  Database["public"]["Functions"]["get_portfolio_summary"]["Returns"][number]

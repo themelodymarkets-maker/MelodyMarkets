@@ -16,6 +16,18 @@ export function formatTokenAmount(value: number): string {
   return tokenAmountFormatter.format(value);
 }
 
+/**
+ * Formats a signed token delta with an explicit +/- sign, e.g. 12.345 ->
+ * "+12.35", -3 -> "-3.00", 0 -> "0.00". Used for unrealized P/L and other
+ * values where the sign itself is the point, unlike a price or balance
+ * (formatted with `formatTokenAmount`), which are never negative.
+ */
+export function formatSignedTokenAmount(value: number): string {
+  if (!Number.isFinite(value)) return "--";
+  const sign = value > 0 ? "+" : value < 0 ? "-" : "";
+  return `${sign}${tokenAmountFormatter.format(Math.abs(value))}`;
+}
+
 const shareAmountFormatter = new Intl.NumberFormat("en-US", {
   minimumFractionDigits: 2,
   maximumFractionDigits: 4,
