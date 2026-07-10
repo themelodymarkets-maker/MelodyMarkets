@@ -5,4 +5,5 @@ export const NAV_LINKS: NavLink[] = [
   { label: "Markets", href: "/markets" },
   { label: "Portfolio", href: "/portfolio" },
   { label: "Leaderboards", href: "/leaderboards" },
+  { label: "Buy tokens", href: "/store" },
 ];

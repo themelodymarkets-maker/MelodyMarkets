@@ -331,7 +331,16 @@ export function TradePanel({
           </div>
           {exceedsMax && (
             <p className="mt-1.5 text-xs text-loss">
-              {isBuy ? "Amount exceeds your token balance." : "You don't hold that many shares."}
+              {isBuy ? (
+                <>
+                  Amount exceeds your token balance.{" "}
+                  <Link href="/store" className="font-semibold text-accent-cyan hover:underline">
+                    Need more tokens?
+                  </Link>
+                </>
+              ) : (
+                "You don't hold that many shares."
+              )}
             </p>
           )}
         </div>
