@@ -110,10 +110,35 @@ body {
   animation: mm-toast-in 220ms ease-out;
 }
 
+/*
+ * Leaderboard medal glow: a subtle pulsing halo around the top-three rank
+ * badges. The glow color is passed per-badge via the `--mm-glow-color` custom
+ * property (see src/components/leaderboards/RankBadge.tsx).
+ */
+@keyframes mm-rank-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--mm-glow-color, transparent);
+  }
+  50% {
+    box-shadow: 0 0 12px 2px var(--mm-glow-color, transparent);
+  }
+}
+
+.mm-rank-glow {
+  animation: mm-rank-glow 2.4s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .mm-confetti-piece,
   .mm-pulse,
   .mm-toast-enter {
     animation: none;
+  }
+
+  /* Keep a soft static halo instead of the pulse. */
+  .mm-rank-glow {
+    animation: none;
+    box-shadow: 0 0 8px 1px var(--mm-glow-color, transparent);
   }
 }

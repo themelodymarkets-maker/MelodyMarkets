@@ -275,6 +275,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _leaderboard_rows: {
+        Args: { p_kind: string }
+        Returns: {
+          avatar_url: string
+          rank: number
+          return_pct: number
+          total_value: number
+          trade_count: number
+          user_id: string
+          username: string
+        }[]
+      }
       execute_trade: {
         Args: {
           p_amount: number
@@ -284,6 +296,24 @@ export type Database = {
           p_user_id: string
         }
         Returns: Json
+      }
+      get_leaderboard: {
+        Args: { p_kind: string; p_limit?: number }
+        Returns: {
+          avatar_url: string
+          rank: number
+          return_pct: number
+          total_value: number
+          user_id: string
+          username: string
+        }[]
+      }
+      get_leaderboard_stats: {
+        Args: never
+        Returns: {
+          total_traders: number
+          trades_today: number
+        }[]
       }
       get_market_overview: {
         Args: never
@@ -296,6 +326,18 @@ export type Database = {
           name: string
           reference_price: number
           slug: string
+        }[]
+      }
+      get_my_rank: {
+        Args: { p_kind: string }
+        Returns: {
+          avatar_url: string
+          rank: number
+          return_pct: number
+          total_value: number
+          trade_count: number
+          user_id: string
+          username: string
         }[]
       }
       get_portfolio_summary: {
@@ -464,3 +506,15 @@ export type MarketOverviewRow =
 /** Row shape returned by the `get_portfolio_summary` RPC (see its migration). */
 export type PortfolioSummaryRow =
   Database["public"]["Functions"]["get_portfolio_summary"]["Returns"][number]
+
+/** Row shape returned by the `get_leaderboard` RPC (see its migration). */
+export type LeaderboardRpcRow =
+  Database["public"]["Functions"]["get_leaderboard"]["Returns"][number]
+
+/** Row shape returned by the `get_my_rank` RPC (see its migration). */
+export type MyRankRpcRow =
+  Database["public"]["Functions"]["get_my_rank"]["Returns"][number]
+
+/** Row shape returned by the `get_leaderboard_stats` RPC (see its migration). */
+export type LeaderboardStatsRpcRow =
+  Database["public"]["Functions"]["get_leaderboard_stats"]["Returns"][number]
