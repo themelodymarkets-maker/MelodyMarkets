@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import { Card } from "@/components/ui/Card";
 import { LinkButton } from "@/components/ui/LinkButton";
+
+export const metadata: Metadata = {
+  title: "Home",
+  description:
+    "MelodyMarkets turns music fandom into a game. Buy and sell virtual shares of your favorite artists and climb the leaderboard.",
+};
 
 const HOW_IT_WORKS_STEPS = [
   {

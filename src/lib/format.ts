@@ -79,6 +79,12 @@ export function computePercentChange(from: number, to: number): PercentChange {
   return { percent, direction };
 }
 
+/** Formats a whole-number count with thousands separators, e.g. 5000 -> "5,000". */
+export function formatInteger(value: number): string {
+  if (!Number.isFinite(value)) return "--";
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value);
+}
+
 /** Formats a signed percent for display, e.g. 2.339 -> "+2.34%", -1.05 -> "-1.05%". */
 export function formatPercent(percent: number): string {
   if (!Number.isFinite(percent)) return "--";

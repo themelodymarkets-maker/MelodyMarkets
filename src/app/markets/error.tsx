@@ -2,8 +2,8 @@
 
 import { useEffect } from "react";
 import { PageShell } from "@/components/layout/PageShell";
+import { StatusCard } from "@/components/ui/StatusCard";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 
 interface MarketsErrorProps {
   error: Error & { digest?: string };
@@ -18,20 +18,19 @@ interface MarketsErrorProps {
  */
 export default function MarketsError({ error, reset }: MarketsErrorProps) {
   useEffect(() => {
-    console.error("[markets] failed to load:", error);
+    console.error("[markets] failed to load:", error.digest ?? error.message);
   }, [error]);
 
   return (
     <PageShell>
-      <Card className="mx-auto max-w-md text-center">
-        <h1 className="text-lg font-semibold text-foreground">Couldn&apos;t load markets</h1>
-        <p className="mt-2 text-sm text-muted">
-          Something went wrong fetching live prices. Please try again.
-        </p>
-        <Button className="mt-6" onClick={reset}>
+      <StatusCard
+        title="Couldn't load markets"
+        description="Something went wrong fetching live prices. Please try again."
+      >
+        <Button type="button" onClick={reset} className="w-full">
           Try again
         </Button>
-      </Card>
+      </StatusCard>
     </PageShell>
   );
 }

@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import { PageShell } from "@/components/layout/PageShell";
 import { PortfolioView } from "@/components/portfolio/PortfolioView";
 import type { PortfolioPositionData, PortfolioTradeRow } from "@/components/portfolio/types";
 import { createClient } from "@/lib/supabase/server";
+
+export const metadata: Metadata = {
+  title: "Portfolio",
+  description: "Track your token balance, open positions, unrealized P/L, and trade history.",
+};
 
 /** Trades per page shown by `PortfolioTradeHistory`; kept in sync with that component's own constant. */
 const TRADE_HISTORY_PAGE_SIZE = 10;

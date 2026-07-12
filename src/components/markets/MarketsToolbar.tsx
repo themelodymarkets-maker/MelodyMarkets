@@ -42,7 +42,7 @@ export function MarketsToolbar({
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
           placeholder="Search artists…"
-          className="w-full rounded-xl border border-border bg-background py-2.5 pr-4 pl-10 text-sm text-foreground transition-colors duration-200 placeholder:text-muted focus:outline-none focus-visible:border-accent-cyan"
+          className="w-full rounded-xl border border-border bg-background py-2.5 pr-4 pl-10 text-sm text-foreground transition-colors duration-200 placeholder:text-muted focus:outline-none focus-visible:border-accent-cyan focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-cyan"
         />
       </div>
 
@@ -75,7 +75,7 @@ function SortToggle({ label, active, direction, onClick }: SortToggleProps) {
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors duration-200",
+        "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm font-medium transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-cyan",
         active
           ? "border-accent-cyan/60 bg-accent-cyan/10 text-foreground"
           : "border-border bg-surface text-muted hover:bg-surface-hover hover:text-foreground",

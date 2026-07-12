@@ -53,6 +53,7 @@ export type TradeErrorCode =
   | "INSUFFICIENT_BALANCE"
   | "INSUFFICIENT_SHARES"
   | "SLIPPAGE_EXCEEDED"
+  | "RATE_LIMITED"
   | "UNKNOWN";
 
 /** User-friendly copy for each failure mode. */
@@ -66,6 +67,7 @@ const TRADE_ERROR_MESSAGES: Record<TradeErrorCode, string> = {
   INSUFFICIENT_SHARES: "You don't have enough shares to sell.",
   SLIPPAGE_EXCEEDED:
     "The price moved past your limit before the trade completed. Try again.",
+  RATE_LIMITED: "You're trading too fast. Wait a moment and try again.",
   UNKNOWN: "Something went wrong while placing your trade. Please try again.",
 };
 
@@ -95,6 +97,7 @@ export function mapDatabaseError(message: string | null | undefined): TradeError
     "INSUFFICIENT_BALANCE",
     "INSUFFICIENT_SHARES",
     "SLIPPAGE_EXCEEDED",
+    "RATE_LIMITED",
   ];
   return codes.find((code) => text.includes(code)) ?? "UNKNOWN";
 }
@@ -147,6 +150,14 @@ export async function executeTrade(input: ExecuteTradeInput): Promise<ExecuteTra
 
   if (authError || !user) {
     throw new TradeError("NOT_AUTHENTICATED");
+  }
+
+  // Per-user throttle (best-effort, fails open): caps runaway clients / scripts
+  // at 10 trades per 10s without touching the atomic economic path below.
+  const { checkRateLimit, TRADE_RATE_LIMIT } = await import("@/lib/rate-limit");
+  const allowed = await checkRateLimit(supabase, `trade:${user.id}`, TRADE_RATE_LIMIT);
+  if (!allowed) {
+    throw new TradeError("RATE_LIMITED");
   }
 
   const { data, error } = await supabase.rpc("execute_trade", {

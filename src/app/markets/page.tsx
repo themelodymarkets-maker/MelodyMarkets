@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import { PageShell } from "@/components/layout/PageShell";
 import { MarketsExplorer } from "@/components/markets/MarketsExplorer";
 import type { MarketRowData } from "@/components/markets/types";
 import { createClient } from "@/lib/supabase/server";
+
+export const metadata: Metadata = {
+  title: "Markets",
+  description: "Browse live artist markets, compare 24h price changes, and find your next trade.",
+};
 
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 

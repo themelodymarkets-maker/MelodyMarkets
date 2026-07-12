@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { getStripe } from "@/lib/stripe";
 import { getTokenPack } from "@/lib/token-packs";
+import { formatInteger } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -41,6 +42,20 @@ export async function createCheckoutSession(packId: string): Promise<CheckoutErr
     return { ok: false, message: "Please sign in to buy tokens." };
   }
 
+  // Throttle checkout-session creation both per IP and per user (best-effort,
+  // fails open) so a script can't spam Stripe session creation. See
+  // src/lib/rate-limit.ts for the in-database strategy and its tradeoffs.
+  const { checkRateLimit, getClientIp, CHECKOUT_IP_RATE_LIMIT, CHECKOUT_USER_RATE_LIMIT } =
+    await import("@/lib/rate-limit");
+  const ip = await getClientIp();
+  const [ipAllowed, userAllowed] = await Promise.all([
+    checkRateLimit(supabase, `checkout-ip:${ip}`, CHECKOUT_IP_RATE_LIMIT),
+    checkRateLimit(supabase, `checkout-user:${user.id}`, CHECKOUT_USER_RATE_LIMIT),
+  ]);
+  if (!ipAllowed || !userAllowed) {
+    return { ok: false, message: "Too many checkout attempts. Please wait a minute and try again." };
+  }
+
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   if (!appUrl) {
     console.error("[checkout] NEXT_PUBLIC_APP_URL is not set.");
@@ -59,7 +74,7 @@ export async function createCheckoutSession(packId: string): Promise<CheckoutErr
             currency: "usd",
             unit_amount: pack.priceCents,
             product_data: {
-              name: `${pack.name} pack — ${pack.tokens.toLocaleString("en-US")} tokens`,
+              name: `${pack.name} pack — ${formatInteger(pack.tokens)} tokens`,
               description: "MelodyMarkets in-game tokens",
             },
           },
@@ -76,7 +91,8 @@ export async function createCheckoutSession(packId: string): Promise<CheckoutErr
     });
     checkoutUrl = session.url;
   } catch (error) {
-    console.error("[checkout] failed to create session:", error);
+    const message = error instanceof Error ? error.message : "unknown error";
+    console.error("[checkout] failed to create session:", message);
     return { ok: false, message: "Could not start checkout. Please try again." };
   }
 

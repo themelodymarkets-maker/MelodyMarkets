@@ -2,11 +2,12 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { PageShell } from "@/components/layout/PageShell";
 import { StoreView } from "@/components/store/StoreView";
+import StoreLoading from "./loading";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "Buy tokens",
-  description: "Top up your MelodyMarkets token balance.",
+  description: "Top up your MelodyMarkets token balance with secure Stripe checkout.",
 };
 
 /**
@@ -24,7 +25,7 @@ export default async function StorePage() {
   return (
     <PageShell>
       {/* useSearchParams (in StoreView) requires a Suspense boundary. */}
-      <Suspense fallback={null}>
+      <Suspense fallback={<StoreLoading />}>
         <StoreView isAuthenticated={user !== null} />
       </Suspense>
     </PageShell>

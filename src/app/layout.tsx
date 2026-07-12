@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Header } from "@/components/layout/Header";
 import { AppProviders } from "@/components/providers/AppProviders";
+import { baseMetadata } from "@/lib/site-metadata";
 import "./globals.css";
 
 const inter = Inter({
@@ -9,10 +10,7 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
-export const metadata: Metadata = {
-  title: "MelodyMarkets",
-  description: "Trade virtual shares of your favorite music artists.",
-};
+export const metadata: Metadata = baseMetadata();
 
 // The root layout renders the session-aware Header on every page. Force
 // dynamic rendering (no static HTML caching, no ISR) so Vercel always

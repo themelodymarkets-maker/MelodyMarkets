@@ -17,7 +17,7 @@ import { useToast } from "@/components/ui/Toast";
 import { submitTrade } from "@/app/actions/trade";
 import { quoteTrade, TRADE_FEE_RATE, FEE_FACTOR, type TradeSide } from "@/lib/amm";
 import type { TradeErrorCode } from "@/lib/trade";
-import { formatShares, formatTokenAmount } from "@/lib/format";
+import { formatShares, formatTokenAmount, formatPercent } from "@/lib/format";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/types/database";
@@ -42,6 +42,7 @@ const ERROR_TITLES: Partial<Record<TradeErrorCode, string>> = {
   INSUFFICIENT_SHARES: "Not enough shares",
   SLIPPAGE_EXCEEDED: "Price moved",
   NOT_AUTHENTICATED: "Sign in to trade",
+  RATE_LIMITED: "Slow down",
 };
 
 export function TradePanel({
@@ -367,7 +368,7 @@ export function TradePanel({
             />
             <PreviewRow
               label="Price impact"
-              value={`${preview.priceImpact.toFixed(2)}%`}
+              value={formatPercent(preview.priceImpact)}
               valueClassName={cn(
                 preview.priceImpact > 5
                   ? "text-loss"

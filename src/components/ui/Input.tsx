@@ -24,7 +24,7 @@ export function Input({ label, hint, invalid, id, className, ...props }: InputPr
         aria-invalid={invalid}
         className={cn(
           "rounded-xl border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted",
-          "transition-colors duration-200 focus:outline-none focus-visible:border-accent-cyan",
+          "transition-colors duration-200 focus:outline-none focus-visible:border-accent-cyan focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-cyan",
           invalid ? "border-loss" : "border-border",
           className,
         )}

@@ -120,7 +120,7 @@ export function HeaderNav({ isAuthenticated, username }: HeaderNavProps) {
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className="text-sm font-medium text-muted transition-colors duration-200 hover:text-foreground"
+                  className="rounded-lg px-1 py-0.5 text-sm font-medium text-muted transition-colors duration-200 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-cyan"
                 >
                   {link.label}
                 </Link>
@@ -149,7 +149,7 @@ export function HeaderNav({ isAuthenticated, username }: HeaderNavProps) {
 
         <button
           type="button"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full text-foreground transition-colors duration-200 hover:bg-surface md:hidden"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full text-foreground transition-colors duration-200 hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-cyan md:hidden"
           aria-label={isMenuOpen ? "Close menu" : "Open menu"}
           aria-expanded={isMenuOpen}
           aria-controls="mobile-menu"

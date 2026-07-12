@@ -10,7 +10,7 @@ import { useBalance } from "@/lib/balance-context";
 import { useToast } from "@/components/ui/Toast";
 import { createCheckoutSession } from "@/app/actions/checkout";
 import { TOKEN_PACKS, formatPackPrice, type TokenPack } from "@/lib/token-packs";
-import { formatTokenAmount } from "@/lib/format";
+import { formatInteger, formatTokenAmount } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 interface StoreViewProps {
@@ -212,7 +212,7 @@ function PackCard({
 
       <div className="mt-6">
         <p className="text-3xl font-bold text-accent-gradient tabular-nums">
-          {pack.tokens.toLocaleString("en-US")}
+          {formatInteger(pack.tokens)}
         </p>
         <p className="text-xs font-medium tracking-wide text-muted uppercase">tokens</p>
       </div>
@@ -227,6 +227,8 @@ function PackCard({
         className="mt-6 w-full disabled:cursor-not-allowed disabled:opacity-60"
         onClick={onBuy}
         disabled={disabled}
+        aria-label={`Buy ${pack.name} pack — ${formatInteger(pack.tokens)} tokens for ${formatPackPrice(pack.priceCents)}`}
+        aria-busy={isPending}
       >
         {isPending ? "Redirecting…" : `Buy ${pack.name}`}
       </Button>

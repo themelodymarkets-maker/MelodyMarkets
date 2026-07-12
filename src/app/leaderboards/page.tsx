@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import { PageShell } from "@/components/layout/PageShell";
 import { LeaderboardView } from "@/components/leaderboards/LeaderboardView";
 import { fetchLeaderboardBoard, fetchLeaderboardStats } from "@/lib/leaderboard";
 import { createClient } from "@/lib/supabase/server";
+
+export const metadata: Metadata = {
+  title: "Leaderboards",
+  description: "See who is leading MelodyMarkets by portfolio return and total value.",
+};
 
 /**
  * Server Component data fetch for /leaderboards. This route is PUBLIC -- the

@@ -102,5 +102,5 @@ async function creditPurchase(session: Stripe.Checkout.Session): Promise<void> {
     throw new Error(`ledger insert failed: ${error.message}`);
   }
 
-  console.log(`[stripe webhook] credited ${tokens} tokens to ${userId} (${session.id})`);
+  console.log(`[stripe webhook] credited ${tokens} tokens for session ${session.id}`);
 }

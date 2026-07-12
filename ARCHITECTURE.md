@@ -1,87 +1,178 @@
 # Architecture
 
-MelodyMarkets is a [Next.js](https://nextjs.org) App Router project written in TypeScript
-and styled with Tailwind CSS. All application code lives under `src/`.
+MelodyMarkets is a [Next.js 15](https://nextjs.org) App Router application in TypeScript, styled with Tailwind CSS v4, backed by Supabase (Postgres + Auth + Realtime), and monetized via Stripe Checkout. All application code lives under `src/`.
+
+## System overview
+
+```
+Browser (React client components)
+    │
+    ├─ Supabase Auth (cookie session, anon key)
+    ├─ Supabase Realtime (market price updates)
+    │
+    ▼
+Next.js Server (Server Components, Server Actions, Route Handlers)
+    │
+    ├─ Supabase (anon key + user JWT) — reads, execute_trade RPC
+    ├─ Supabase Admin (service role) — webhooks, cron, seed
+    ├─ Stripe API — checkout session creation
+    └─ Last.fm API — artist ingestion (cron/seed only)
+    │
+    ▼
+Postgres (Supabase)
+    ├─ RLS on all tables; economic writes via SECURITY DEFINER functions
+    ├─ execute_trade — atomic AMM trades
+    ├─ check_rate_limit — serverless-safe rate limiting
+    └─ Portfolio / leaderboard RPCs
+```
 
 ## Folder structure
 
 ### `src/app`
 
-Route definitions using the Next.js App Router. Each folder maps to a URL segment, and
-`page.tsx` inside a folder is the page rendered at that route (e.g. `src/app/markets/page.tsx`
-renders `/markets`). `layout.tsx` at the root defines the shared HTML shell (fonts, global
-navigation) that wraps every page, and `globals.css` holds the global stylesheet and design
-tokens.
+Route definitions using the App Router. Each folder maps to a URL segment; `page.tsx` renders that route. Special files:
 
-### `src/components/ui`
+| File | Purpose |
+|------|---------|
+| `layout.tsx` | Root shell: fonts, header, providers, base metadata |
+| `loading.tsx` | Suspense fallback skeleton (markets, artist, leaderboards, portfolio, store) |
+| `error.tsx` | Route error boundary (`/markets`) |
+| `global-error.tsx` | Root error boundary |
+| `not-found.tsx` | Branded 404 |
+| `icon.tsx` / `opengraph-image.tsx` | Favicon and OG image |
 
-Small, reusable, presentation-only UI primitives that have no knowledge of routes or business
-logic — things like `Button`, `Card`, and other building blocks that any page can compose
-together. These should stay generic so they can be reused across unrelated features.
+### `src/app/actions`
 
-### `src/components/layout`
+Server Actions (marked `"use server"`):
 
-Structural "shell" components that define the app's chrome: the top navigation bar, the
-logo/wordmark, and page wrappers. These components are aware of the site's routes and overall
-layout, unlike the generic primitives in `components/ui`.
+- `trade.ts` — `submitTrade` → `executeTrade`
+- `checkout.ts` — `createCheckoutSession` → Stripe redirect
+- `auth.ts` — `signInWithEmail`, `signUpWithEmail` with per-IP rate limiting
+
+### `src/app/api`
+
+Route Handlers:
+
+| Route | Auth | Purpose |
+|-------|------|---------|
+| `POST /api/webhooks/stripe` | Stripe signature | Credit token purchases (only place tokens are granted) |
+| `GET /api/cron/snapshot` | `CRON_SECRET` | Daily price snapshots + Last.fm refresh |
+| `POST /api/admin/seed` | `CRON_SECRET` | Ingest Last.fm top artists (manual trigger) |
+| `GET /api/artists/:id/price-history` | Public (RLS) | Chart data for artist pages |
+
+### `src/components`
+
+Feature and UI components. Key areas:
+
+- `ui/` — primitives (`Button`, `Card`, `Input`, `Toast`, `StatusCard`)
+- `layout/` — `Header`, `Logo`, `PageShell`
+- `artist/`, `markets/`, `portfolio/`, `leaderboards/`, `store/` — feature views
 
 ### `src/lib`
 
-Framework-agnostic utilities, constants, and (in the future) API clients — for example, helper
-functions, shared configuration like the navigation link list, and later on things like a
-Supabase client or a Last.fm API wrapper. Nothing in here should render UI.
+Framework-agnostic business logic and server utilities:
 
-### `src/types`
+| Module | Role |
+|--------|------|
+| `amm.ts` | Pure constant-product AMM math (`quoteTrade`) |
+| `trade.ts` | Server-side `executeTrade` wrapper + error mapping |
+| `portfolio.ts`, `leaderboard.ts`, `market.ts` | Display metrics and data helpers |
+| `format.ts` | Shared number/date formatting |
+| `rate-limit.ts` | Postgres-backed rate limiting (see tradeoff below) |
+| `supabase/` | Browser, server, admin, and middleware clients |
+| `site-metadata.ts` | Shared SEO / OG metadata helpers |
 
-Shared TypeScript types and interfaces used across multiple files, so features rely on a single
-source of truth instead of redefining shapes inline.
+### `supabase/migrations`
 
-## Design system
+Postgres schema, RLS policies, and `SECURITY DEFINER` functions. The trade engine is `execute_trade`; rate limiting is `check_rate_limit` + `rate_limits` table.
 
-Colors, fonts, and border radii are defined once as Tailwind theme tokens in
-`src/app/globals.css` (via the `@theme` block) rather than hard-coded in components. This keeps
-the dark theme, accent gradient, and gain/loss colors consistent as new pages are added.
+## Authentication
 
-## Price history & charts
+Supabase Auth with cookie-based sessions. Middleware (`src/middleware.ts` → `src/lib/supabase/middleware.ts`) refreshes tokens and protects `/portfolio`.
 
-`price_snapshots` is the single, append-only source of truth for every chart in the app (see
-its migration in `supabase/migrations`). Rows are written from exactly two places, and nowhere
-else:
+Sign-in and sign-up run through server actions (`src/app/actions/auth.ts`) with per-IP rate limiting before Supabase validates credentials. Profile rows are created by the `handle_new_user` database trigger on signup.
 
-- `execute_trade` (`source: 'trade'`) — one row per executed trade, at the market's new price.
-- `/api/cron/snapshot` (`source: 'cron'`) — one row per active market, every hour.
+## Trading flow
 
-No code path is allowed to interpolate, backfill, or otherwise fabricate a `price_snapshots`
-row. Charts (`src/components/artist/PriceChart.tsx`, the `/markets` sparklines) render exactly
-the rows that exist; when an artist has too little history to plot a meaningful line, the UI
-says so honestly instead of inventing data. Range fetches beyond ~500 real rows are downsampled
-by bucketing time and keeping the *last real row* in each bucket (never averaged or
-interpolated) — see `src/lib/price-history.ts`.
+```
+TradePanel (client)
+  → submitTrade (server action)
+  → executeTrade (rate limit check)
+  → supabase.rpc("execute_trade") as authenticated user
+  → Postgres: row lock, AMM swap, ledger/holdings/trades/snapshot writes
+```
+
+`quoteTrade` in `amm.ts` is preview-only. The SQL function is the single source of truth for economic writes. Clients pass `minReceive` derived from a quoted output with slippage tolerance.
+
+## Payments
+
+```
+StoreView → createCheckoutSession (server action, rate limited)
+  → Stripe Checkout redirect
+  → User pays
+  → POST /api/webhooks/stripe (signature verified on raw body)
+  → token_ledger insert (idempotent by session id)
+```
+
+Token pack catalog lives in `src/lib/token-packs.ts` (not Stripe Dashboard). Token amounts in webhook metadata are set server-side at checkout creation.
+
+## Rate limiting
+
+Implemented in `src/lib/rate-limit.ts`, backed by the `check_rate_limit` Postgres function.
+
+**Why Postgres, not in-memory or Redis:** Vercel serverless instances do not share memory. Postgres is already in the request path, adds no new infrastructure, and works across all instances. Tradeoff: one extra DB round trip per guarded request — acceptable at this scale; revisit Redis if traffic grows significantly.
+
+| Action | Limit | Bucket |
+|--------|-------|--------|
+| Trade | 10 / 10s | `trade:<userId>` |
+| Checkout | 5 / 60s | `checkout-ip:<ip>`, `checkout-user:<userId>` |
+| Auth | 10 / 15 min | `auth-ip:<ip>` |
+
+Fails open if the limiter errors (protective guard, not a correctness gate).
+
+## Price history and charts
+
+`price_snapshots` is append-only. Rows are written from exactly two places:
+
+- `execute_trade` (`source: 'trade'`) — one row per executed trade
+- `/api/cron/snapshot` (`source: 'cron'`) — one row per active market, daily
+
+Charts render real rows only; downsampling buckets time and keeps the last real row per bucket (see `src/lib/price-history.ts`).
 
 ## Cron jobs
 
-Scheduled server-side jobs live under `src/app/api/cron/*` and share one auth guard,
-`isAuthorizedCronRequest` (`src/lib/cron-auth.ts`): every request must carry
-`Authorization: Bearer <CRON_SECRET>`, checked with a constant-time comparison.
+Scheduled jobs live under `src/app/api/cron/*` and share `isAuthorizedCronRequest` (`src/lib/cron-auth.ts`): `Authorization: Bearer <CRON_SECRET>` with constant-time comparison.
 
-Schedules are declared in `vercel.json`. The snapshot job runs once daily (rather than hourly) --
-Vercel's Hobby plan only allows a cron job to fire once per day per project, and a deploy is
-rejected outright if `vercel.json` declares a schedule that fires more often than that, so keep
-any future cron schedule changes Hobby-plan-compatible unless the project is on Pro. When a
-`CRON_SECRET` environment variable is set on the Vercel project, Vercel's own scheduler
-automatically attaches
-`Authorization: Bearer <CRON_SECRET>` to every request it makes to a cron path — the exact same
-header format `isAuthorizedCronRequest` already expects — so no separate code path is needed to
-accept "Vercel's" auth versus anyone else's; presenting the correct secret is what authenticates
-the request, regardless of caller. (Vercel-triggered requests are also identifiable, if ever
-useful, by a `vercel-cron/1.0` `User-Agent` and an `x-vercel-cron-schedule` header, but neither
-of those is trusted for authentication since they aren't signed and could be forged by any
-caller — the bearer secret is the only thing that actually proves the request came from a holder
-of `CRON_SECRET`.)
+Schedules are in `vercel.json`. The snapshot job runs once daily (Vercel Hobby plan constraint). When `CRON_SECRET` is set, Vercel Cron attaches the bearer token automatically.
 
-## What's intentionally not here yet
+`/api/admin/seed` is not scheduled — trigger manually for initial artist ingestion.
 
-A database (Supabase/Postgres), authentication, price charts, and the core AMM trading logic
-have since been layered on top of this original foundation — see `supabase/migrations`,
-`src/lib/supabase`, `src/components/artist/PriceChart.tsx`, and
-`supabase/migrations/20260708160000_create_execute_trade_function.sql` respectively.
+## Design system
+
+Colors, fonts, and radii are Tailwind theme tokens in `src/app/globals.css` (`@theme` block). Shared formatting lives in `src/lib/format.ts`. Branded error/404 states use `StatusCard`.
+
+## Security model
+
+See `SECURITY_NOTES.md` for the full audit. In short:
+
+- Service role key is server-only (`server-only` import guard)
+- All tables have RLS; no client-writable economic paths
+- `execute_trade` asserts `p_user_id = auth.uid()`
+- Stripe webhook verifies signatures on the raw request body
+- Admin/cron routes reject missing or incorrect secrets
+
+## Deployment
+
+- **Hosting:** Vercel (Next.js)
+- **Database / Auth:** Supabase
+- **Payments:** Stripe (test mode first; see `LAUNCH_CHECKLIST.md` for live-mode switch)
+- **Launch steps:** `LAUNCH_CHECKLIST.md`
+
+## Testing
+
+```bash
+npm test          # Vitest unit tests (AMM math, portfolio metrics)
+npm run build     # Production build
+```
+
+DB smoke test: `supabase/tests/execute_trade_smoke_test.sql` (manual, run in Supabase SQL editor).

@@ -128,7 +128,10 @@ export async function generateMetadata({ params }: ArtistPageProps): Promise<Met
     return {};
   }
 
-  return { title: artist.name };
+  return {
+    title: artist.name,
+    description: `Trade ${artist.name} on MelodyMarkets. Live price, chart, and recent trades.`,
+  };
 }
 
 export default async function ArtistPage({ params }: ArtistPageProps) {
