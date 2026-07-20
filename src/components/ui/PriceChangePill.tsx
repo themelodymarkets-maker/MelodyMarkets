@@ -8,9 +8,9 @@ interface PriceChangePillProps {
 }
 
 /**
- * Green/red pill with a directional arrow showing a signed percentage
- * change. Shared by every page that surfaces price movement (markets
- * watchlist today; artist detail and portfolio later).
+ * Signed percentage change in the DATA face, with a directional arrow so the
+ * gain/loss color is never the only cue (colorblind-safe). Neon glow on the
+ * number so up/down pops against the deep-space field.
  */
 export function PriceChangePill({ percent, className }: PriceChangePillProps) {
   const direction: PriceDirection = percent > 0 ? "up" : percent < 0 ? "down" : "flat";
@@ -18,10 +18,10 @@ export function PriceChangePill({ percent, className }: PriceChangePillProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums",
-        direction === "up" && "bg-gain/10 text-gain",
-        direction === "down" && "bg-loss/10 text-loss",
-        direction === "flat" && "bg-muted/10 text-muted",
+        "inline-flex items-center gap-1 font-data tabular text-sm font-medium",
+        direction === "up" && "text-gain text-glow-gain",
+        direction === "down" && "text-loss text-glow-loss",
+        direction === "flat" && "text-muted",
         className,
       )}
     >

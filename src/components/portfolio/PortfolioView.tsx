@@ -108,7 +108,7 @@ export function PortfolioView({
       ) : (
         <Card className="mt-6 overflow-hidden p-0">
           <PortfolioPositionsListHeader />
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-rail">
             {positions.map((position) => (
               <PortfolioPositionRow key={position.artistId} position={position} />
             ))}

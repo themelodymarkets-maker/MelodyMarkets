@@ -1,75 +1,175 @@
 @import "tailwindcss";
 
 /*
- * MelodyMarkets design tokens.
- * Every color, font, and radius used across the app is defined here so that
- * future pages stay visually consistent without repeating raw values.
+ * ==========================================================================
+ * THE COLOR RULE — SLEEK CYBER-DARK
+ * --------------------------------------------------------------------------
+ * Cyan (accent) is the brand: buttons, active states, subtle glow.
+ * Gold (token) is exclusive to token balances and store items.
+ * Neon Green (gain) and Red (loss) are DATA ONLY — up / down.
+ * Never use gain/loss on decorative chrome. Every color in a component
+ * must come from the tokens below. No arbitrary hex in components
+ * (except SVG/canvas gradient stops that reference CSS variables).
+ * ==========================================================================
+ *
+ * SLEEK CYBER-DARK: deep navy/slate field, clean indigo-slate panels,
+ * electric cyan accent. Elevation = surface over background + 1px border
+ * + soft blurred cyan glow at 10% on active states. No skeuomorphism.
  */
 @theme {
   /* Surfaces */
-  --color-background: #05050a;
-  --color-surface: #121218;
-  --color-surface-hover: #1a1a24;
-  --color-border: #26262f;
+  --color-background: #0b111e; /* deep navy / slate */
+  --color-surface: #172033; /* indigo-slate panels */
+  --color-border: #2a3548; /* subtle seam / wells */
 
   /* Text */
-  --color-foreground: #f5f5f7;
-  --color-muted: #9a9aac;
+  --color-foreground: #ffffff; /* primary — pure white */
+  --color-muted: #8b9bb4; /* secondary — cool steel */
 
-  /* Brand accent */
-  --color-accent-purple: #a855f7;
-  --color-accent-cyan: #22d3ee;
+  /* Accents */
+  --color-accent: #00f2fe; /* electric cyan — brand */
+  --color-accent-dim: #0a6b72; /* cyan at rest */
+  --color-token: #ffd700; /* gold — balances / store only */
 
-  /* Market movement */
-  --color-gain: #22c55e;
-  --color-loss: #f43f5e;
+  /* Market movement (DATA ONLY) */
+  --color-gain: #0dff68;
+  --color-loss: #ff3b30;
 
-  /* Typography */
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  /* Typography — Geist Sans throughout */
+  --font-display: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-data: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 
-  /* Radii */
-  --radius-card: 1rem;
+  /* Type scale: 11 / 12 / 14 / 16 / 20 / 28 / 40 / 56 px */
+  --text-2xs: 0.6875rem; /* 11 */
+  --text-xs: 0.75rem; /* 12 */
+  --text-sm: 0.875rem; /* 14 */
+  --text-base: 1rem; /* 16 */
+  --text-lg: 1.25rem; /* 20 */
+  --text-xl: 1.75rem; /* 28 */
+  --text-2xl: 2.5rem; /* 40 */
+  --text-3xl: 3.5rem; /* 56 */
+
+  /* Radii: 10px cards/panels; pill (full) controls */
+  --radius-control: 9999px;
+  --radius-card: 10px;
 }
 
-@utility bg-accent-gradient {
-  background-image: linear-gradient(
-    90deg,
-    var(--color-accent-purple),
-    var(--color-accent-cyan)
-  );
+/*
+ * Raw token values mirrored as plain custom properties, for SVG attributes
+ * and inline styles that cannot use Tailwind color utilities (charts,
+ * meter fills, generated OG/icon images).
+ */
+:root {
+  --background: #0b111e;
+  --surface: #172033;
+  --border: #2a3548;
+  --foreground: #ffffff;
+  --muted: #8b9bb4;
+  --accent: #00f2fe;
+  --accent-dim: #0a6b72;
+  --token: #ffd700;
+  --gain: #0dff68;
+  --loss: #ff3b30;
 }
 
-@utility text-accent-gradient {
-  background-image: linear-gradient(
-    90deg,
-    var(--color-accent-purple),
-    var(--color-accent-cyan)
-  );
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
+/* Every number a user could care about is DATA face + tabular figures. */
+.font-data {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: 0.01em;
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Compact uppercase labels — Geist, geometric, clean. */
+@utility display-label {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+/* Soft panel elevation: 1px border carries structure; glow stays subtle. */
+@utility glow-panel {
+  box-shadow: 0 0 24px rgba(0, 242, 254, 0.1);
+}
+
+/* Active / primary glow — blurred accent at 10% opacity. */
+@utility glow-accent {
+  box-shadow: 0 0 20px rgba(0, 242, 254, 0.1);
+}
+
+@utility glow-token {
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.1);
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.35);
+}
+
+@utility text-glow {
+  text-shadow: 0 0 10px rgba(0, 242, 254, 0.35);
+}
+
+@utility text-glow-gain {
+  text-shadow: 0 0 10px rgba(13, 255, 104, 0.45);
+}
+
+@utility text-glow-loss {
+  text-shadow: 0 0 10px rgba(255, 59, 48, 0.4);
+}
+
+@utility text-glow-token {
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
 }
 
 body {
   background-color: var(--color-background);
   color: var(--color-foreground);
+  font-family: var(--font-body);
+  font-weight: 400;
+  line-height: 1.5;
   overflow-x: hidden;
 }
 
+/* 2px cyan focus ring on every focusable element. Never removed. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
 /* ---------------------------------------------------------------------------
- * Gamified trade feedback: confetti burst + success pulse + toast entrance.
- * Kept as plain CSS keyframes so components can opt in via a class/inline
- * style without pulling in an animation dependency. All respect
- * prefers-reduced-motion below.
+ * Motion. All of it is disabled under prefers-reduced-motion at the bottom.
  * ------------------------------------------------------------------------- */
+
+/* Soft breath on an active impact fill. */
+@keyframes mm-meter-pulse {
+  0%,
+  100% {
+    filter: brightness(1);
+    box-shadow: 0 0 12px rgba(0, 242, 254, 0.1);
+  }
+  50% {
+    filter: brightness(1.08);
+    box-shadow: 0 0 18px rgba(13, 255, 104, 0.18);
+  }
+}
+
+.mm-meter-fill {
+  animation: mm-meter-pulse 2.8s ease-in-out infinite;
+  transform-origin: left center;
+  will-change: width, filter;
+}
+
 @keyframes mm-confetti-fall {
   0% {
-    transform: translate3d(0, 0, 0) rotate(0deg);
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
     opacity: 1;
   }
   100% {
-    transform: translate3d(var(--mm-confetti-x, 0), 140px, 0)
-      rotate(var(--mm-confetti-r, 360deg));
+    transform: translate3d(var(--mm-confetti-x, 0), 180px, 0)
+      rotate(var(--mm-confetti-r, 360deg)) scale(0.6);
     opacity: 0;
   }
 }
@@ -77,18 +177,18 @@ body {
 .mm-confetti-piece {
   position: absolute;
   top: 0;
-  width: 8px;
-  height: 8px;
-  border-radius: 1px;
-  animation: mm-confetti-fall 900ms cubic-bezier(0.25, 0.75, 0.45, 1) forwards;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  animation: mm-confetti-fall 1100ms cubic-bezier(0.25, 0.75, 0.45, 1) forwards;
 }
 
 @keyframes mm-pulse-flash {
   0% {
-    box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.55);
+    box-shadow: 0 0 0 0 rgba(0, 242, 254, 0.35);
   }
   100% {
-    box-shadow: 0 0 0 14px rgba(34, 211, 238, 0);
+    box-shadow: 0 0 0 16px rgba(0, 242, 254, 0);
   }
 }
 
@@ -111,35 +211,62 @@ body {
   animation: mm-toast-in 220ms ease-out;
 }
 
-/*
- * Leaderboard medal glow: a subtle pulsing halo around the top-three rank
- * badges. The glow color is passed per-badge via the `--mm-glow-color` custom
- * property (see src/components/leaderboards/RankBadge.tsx).
- */
-@keyframes mm-rank-glow {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 var(--mm-glow-color, transparent);
+/* Bottom sheet slide-up on mobile. */
+@keyframes mm-sheet-in {
+  0% {
+    transform: translateY(100%);
   }
-  50% {
-    box-shadow: 0 0 12px 2px var(--mm-glow-color, transparent);
+  100% {
+    transform: translateY(0);
   }
 }
 
-.mm-rank-glow {
-  animation: mm-rank-glow 2.4s ease-in-out infinite;
+.mm-sheet-enter {
+  animation: mm-sheet-in 220ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+/* Page enter: soft fade + lift. */
+@keyframes mm-page-in {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mm-page-enter {
+  animation: mm-page-in 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Chart line soft pulse. */
+@keyframes mm-heartbeat {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 4px rgba(0, 242, 254, 0.35));
+    opacity: 1;
+  }
+  50% {
+    filter: drop-shadow(0 0 8px rgba(0, 242, 254, 0.55));
+    opacity: 0.95;
+  }
+}
+
+.mm-chart-heartbeat {
+  animation: mm-heartbeat 2.4s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .mm-meter-fill,
   .mm-confetti-piece,
   .mm-pulse,
-  .mm-toast-enter {
+  .mm-toast-enter,
+  .mm-sheet-enter,
+  .mm-page-enter,
+  .mm-chart-heartbeat {
     animation: none;
-  }
-
-  /* Keep a soft static halo instead of the pulse. */
-  .mm-rank-glow {
-    animation: none;
-    box-shadow: 0 0 8px 1px var(--mm-glow-color, transparent);
+    transition: none;
   }
 }

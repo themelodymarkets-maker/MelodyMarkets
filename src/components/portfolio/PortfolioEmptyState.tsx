@@ -5,15 +5,12 @@ import { LinkButton } from "@/components/ui/LinkButton";
 export function PortfolioEmptyState() {
   return (
     <Card className="mx-auto max-w-md text-center">
-      <h2 className="text-lg font-semibold text-foreground">
-        Your first trade starts your story
-      </h2>
+      <h2 className="display-label text-sm text-foreground">No positions yet</h2>
       <p className="mt-2 text-sm text-muted">
-        You don&apos;t hold any shares yet. Browse Markets to find an artist and place your
-        first trade.
+        You do not own any artists yet. Markets is where you start.
       </p>
       <LinkButton href="/markets" className="mt-5">
-        Browse Markets
+        Browse markets
       </LinkButton>
     </Card>
   );

@@ -18,7 +18,7 @@ interface MarketsExplorerProps {
 
 /**
  * Client Component: owns everything on the markets page that needs browser
- * state -- search, sort, and the live Supabase Realtime subscription. Seeded
+ * state (search, sort, and the live Supabase Realtime subscription). Seeded
  * with the rows the server already fetched (`initialRows`), so there is no
  * client-side data fetch (and no loading flash) for the first paint; from
  * then on this component patches individual rows in place as trades move
@@ -33,7 +33,7 @@ export function MarketsExplorer({ initialRows }: MarketsExplorerProps) {
 
   // Subscribe once to Realtime changes on `markets`. Each UPDATE payload
   // (fired whenever a trade moves token_reserve/share_reserve) patches only
-  // the matching row's price -- the rest of the list, and the current
+  // the matching row's price: the rest of the list, and the current
   // search/sort state, are left completely untouched.
   useEffect(() => {
     const supabase = createClient();
@@ -79,7 +79,7 @@ export function MarketsExplorer({ initialRows }: MarketsExplorerProps) {
     <div>
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Markets</h1>
+          <h1 className="display-label text-xl text-foreground">Markets</h1>
           <p className="mt-1 text-sm text-muted">
             Live prices across {rows.length} active artist{rows.length === 1 ? "" : "s"}.
           </p>
@@ -91,7 +91,7 @@ export function MarketsExplorer({ initialRows }: MarketsExplorerProps) {
         <div className="mt-8">
           <MarketsEmptyState
             title="No markets yet"
-            description="Check back soon — artists are added to MelodyMarkets regularly."
+            description="Artists get added regularly. Check back soon."
           />
         </div>
       ) : (
@@ -112,11 +112,11 @@ export function MarketsExplorer({ initialRows }: MarketsExplorerProps) {
               <div className="p-6">
                 <MarketsEmptyState
                   title="No matches"
-                  description={`No artists match "${query}". Try a different search.`}
+                  description={`Nothing matches "${query}". Try a different search.`}
                 />
               </div>
             ) : (
-              <div className="divide-y divide-border">
+              <div className="divide-y divide-rail">
                 {visibleRows.map((row) => (
                   <MarketRow key={row.artistId} row={row} />
                 ))}
@@ -161,12 +161,12 @@ function getSortValue(row: MarketRowData, field: SortField): number {
 
 function LiveIndicator({ isLive }: { isLive: boolean }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted">
+    <span className="inline-flex items-center gap-1.5 display-label text-2xs text-muted">
       <span
-        className={cn("h-1.5 w-1.5 rounded-full", isLive ? "bg-gain" : "bg-muted")}
+        className={cn("h-1.5 w-1.5 rounded-full", isLive ? "bg-accent" : "bg-label")}
         aria-hidden="true"
       />
-      {isLive ? "Live" : "Connecting…"}
+      {isLive ? "Live" : "Connecting"}
     </span>
   );
 }

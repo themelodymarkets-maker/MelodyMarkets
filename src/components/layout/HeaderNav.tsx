@@ -28,7 +28,7 @@ interface AuthDisplayState {
  *
  * The session state is first resolved on the server (see Header) and passed
  * in as props, so the very first paint is correct with no flash of the wrong
- * button. From then on, this component owns the *live* state itself: it
+ * button. From then on, this component owns the live state itself: it
  * subscribes to `supabase.auth.onAuthStateChange` and updates local React
  * state directly whenever a SIGNED_IN, SIGNED_OUT, or USER_UPDATED event
  * fires, so the header flips instantly (log out, sign in, sign up) without
@@ -36,7 +36,7 @@ interface AuthDisplayState {
  *
  * A `router.refresh()` is still fired alongside those updates, but only to
  * reconcile secondary server-rendered data (like the profile username) in
- * the background — the visible header state never waits on it.
+ * the background: the visible header state never waits on it.
  */
 export function HeaderNav({ isAuthenticated, username }: HeaderNavProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -110,7 +110,7 @@ export function HeaderNav({ isAuthenticated, username }: HeaderNavProps) {
   const { isAuthenticated: isSignedIn, username: displayName } = authState;
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Logo />
 
@@ -120,7 +120,7 @@ export function HeaderNav({ isAuthenticated, username }: HeaderNavProps) {
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className="rounded-lg px-1 py-0.5 text-sm font-medium text-muted transition-colors duration-200 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-cyan"
+                  className="display-label rounded-full px-1 py-0.5 text-xs text-muted transition-[color,text-shadow] duration-150 hover:text-accent hover:text-glow"
                 >
                   {link.label}
                 </Link>
@@ -134,22 +134,18 @@ export function HeaderNav({ isAuthenticated, username }: HeaderNavProps) {
             <>
               <TokenBalanceChip />
               <span className="text-sm font-medium text-foreground">{displayName}</span>
-              <Button
-                variant="secondary"
-                onClick={handleSignOut}
-                disabled={isSigningOut}
-              >
-                {isSigningOut ? "Signing out…" : "Sign Out"}
+              <Button variant="secondary" onClick={handleSignOut} disabled={isSigningOut}>
+                {isSigningOut ? "Signing out" : "Sign out"}
               </Button>
             </>
           ) : (
-            <LinkButton href="/login">Sign In</LinkButton>
+            <LinkButton href="/login">Sign in</LinkButton>
           )}
         </div>
 
         <button
           type="button"
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full text-foreground transition-colors duration-200 hover:bg-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-cyan md:hidden"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-full text-foreground transition-[transform,background-color] duration-100 ease-out hover:bg-border active:scale-95 md:hidden"
           aria-label={isMenuOpen ? "Close menu" : "Open menu"}
           aria-expanded={isMenuOpen}
           aria-controls="mobile-menu"
@@ -166,7 +162,7 @@ export function HeaderNav({ isAuthenticated, username }: HeaderNavProps) {
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className="block rounded-lg px-3 py-2 text-sm font-medium text-muted transition-colors duration-200 hover:bg-surface hover:text-foreground"
+                  className="display-label flex min-h-11 items-center rounded-full px-3 text-sm text-muted transition-colors hover:bg-border hover:text-accent"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   {link.label}
@@ -186,12 +182,12 @@ export function HeaderNav({ isAuthenticated, username }: HeaderNavProps) {
                     onClick={handleSignOut}
                     disabled={isSigningOut}
                   >
-                    {isSigningOut ? "Signing out…" : "Sign Out"}
+                    {isSigningOut ? "Signing out" : "Sign out"}
                   </Button>
                 </div>
               ) : (
                 <LinkButton href="/login" className="w-full" onClick={() => setIsMenuOpen(false)}>
-                  Sign In
+                  Sign in
                 </LinkButton>
               )}
             </li>

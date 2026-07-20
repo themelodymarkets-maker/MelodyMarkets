@@ -10,8 +10,9 @@ interface ConfettiBurstProps {
   fireKey: number;
 }
 
-const PIECE_COLORS = ["#a855f7", "#22d3ee", "#22c55e", "#f5f5f7", "#f59e0b"];
-const PIECE_COUNT = 18;
+// Sleek celebration palette: cyan, gold, gain green, white (never loss red).
+const PIECE_COLORS = ["var(--accent)", "var(--token)", "var(--gain)", "var(--foreground)"];
+const PIECE_COUNT = 32;
 
 interface Piece {
   id: number;
@@ -19,9 +20,8 @@ interface Piece {
 }
 
 /**
- * Lightweight, canvas-free confetti. When `fireKey` changes it spawns a small
- * burst of colored pieces (absolutely positioned within a relative parent)
- * that fall and fade via the `mm-confetti-piece` keyframes, then unmount.
+ * Lightweight, canvas-free confetti. When `fireKey` changes it spawns a burst
+ * of neon pieces that fall and fade via `mm-confetti-piece`, then unmount.
  * Purely decorative and `aria-hidden`.
  */
 export function ConfettiBurst({ fireKey }: ConfettiBurstProps) {
@@ -31,14 +31,18 @@ export function ConfettiBurst({ fireKey }: ConfettiBurstProps) {
     if (fireKey === 0) return;
 
     const spawned: Piece[] = Array.from({ length: PIECE_COUNT }, (_, i) => {
-      const xDrift = Math.round((Math.random() - 0.5) * 220);
-      const rotation = Math.round(180 + Math.random() * 540);
+      const xDrift = Math.round((Math.random() - 0.5) * 280);
+      const rotation = Math.round(180 + Math.random() * 720);
+      const size = 8 + Math.round(Math.random() * 6);
       return {
         id: fireKey * 1000 + i,
         style: {
           left: `${Math.round(Math.random() * 100)}%`,
+          width: size,
+          height: size,
           backgroundColor: PIECE_COLORS[i % PIECE_COLORS.length],
-          animationDelay: `${Math.round(Math.random() * 120)}ms`,
+          boxShadow: `0 0 8px ${PIECE_COLORS[i % PIECE_COLORS.length]}`,
+          animationDelay: `${Math.round(Math.random() * 140)}ms`,
           ["--mm-confetti-x" as string]: `${xDrift}px`,
           ["--mm-confetti-r" as string]: `${rotation}deg`,
         },
@@ -46,7 +50,7 @@ export function ConfettiBurst({ fireKey }: ConfettiBurstProps) {
     });
 
     setPieces(spawned);
-    const timer = setTimeout(() => setPieces([]), 1100);
+    const timer = setTimeout(() => setPieces([]), 1300);
     return () => clearTimeout(timer);
   }, [fireKey]);
 

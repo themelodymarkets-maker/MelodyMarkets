@@ -17,9 +17,9 @@ interface AuthCardProps {
 /** Shared centered container for the login and signup forms. */
 export function AuthCard({ title, subtitle, children, footer }: AuthCardProps) {
   return (
-    <Card className="mx-auto w-full max-w-md hover:border-border">
+    <Card className="mx-auto w-full max-w-md">
       <div className="text-center">
-        <h1 className="text-2xl font-semibold text-foreground">{title}</h1>
+        <h1 className="display-label text-lg text-foreground">{title}</h1>
         <p className="mt-2 text-sm text-muted">{subtitle}</p>
       </div>
 
@@ -27,10 +27,7 @@ export function AuthCard({ title, subtitle, children, footer }: AuthCardProps) {
 
       <p className="mt-6 text-center text-sm text-muted">
         {footer.prompt}{" "}
-        <Link
-          href={footer.href}
-          className="font-medium text-accent-gradient transition-opacity duration-200 hover:opacity-80"
-        >
+        <Link href={footer.href} className="text-accent underline underline-offset-2">
           {footer.linkLabel}
         </Link>
       </p>

@@ -8,13 +8,13 @@ interface StatusCardProps {
   children?: ReactNode;
 }
 
-/** Branded centered card for error and not-found states. */
+/** Branded centered panel for error and not-found states. */
 export function StatusCard({ title, description, children }: StatusCardProps) {
   return (
     <div className="mx-auto flex w-full max-w-md flex-col items-center text-center">
       <Logo />
       <Card className="mt-8 w-full">
-        <h1 className="text-lg font-semibold text-foreground">{title}</h1>
+        <h1 className="display-label text-lg text-foreground">{title}</h1>
         <p className="mt-2 text-sm text-muted">{description}</p>
         {children && <div className="mt-6 flex flex-col gap-3">{children}</div>}
       </Card>

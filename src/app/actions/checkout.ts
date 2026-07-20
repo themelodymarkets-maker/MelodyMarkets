@@ -7,7 +7,7 @@ import { formatInteger } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * Returned only on failure. On success this action never returns normally — it
+ * Returned only on failure. On success this action never returns normally: it
  * throws Next's redirect to hand the browser off to Stripe Checkout.
  */
 export interface CheckoutError {
@@ -21,8 +21,8 @@ export interface CheckoutError {
  * It validates the pack id against the in-code catalog, resolves the signed-in
  * user from cookies, and creates a Stripe Checkout Session in `payment` mode
  * with the line item built inline from the pack (no Dashboard product needed).
- * The session carries `{ user_id, pack_id, tokens }` in metadata so the webhook
- * — the ONLY place tokens are ever credited — can grant the correct amount.
+ * The session carries `{ user_id, pack_id, tokens }` in metadata so the webhook,
+ * the ONLY place tokens are ever credited, can grant the correct amount.
  *
  * Tokens are NOT credited here and NOT on the success redirect: this only opens
  * the payment flow.
@@ -39,7 +39,7 @@ export async function createCheckoutSession(packId: string): Promise<CheckoutErr
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { ok: false, message: "Please sign in to buy tokens." };
+    return { ok: false, message: "Sign in to buy tokens." };
   }
 
   // Throttle checkout-session creation both per IP and per user (best-effort,
@@ -53,7 +53,7 @@ export async function createCheckoutSession(packId: string): Promise<CheckoutErr
     checkRateLimit(supabase, `checkout-user:${user.id}`, CHECKOUT_USER_RATE_LIMIT),
   ]);
   if (!ipAllowed || !userAllowed) {
-    return { ok: false, message: "Too many checkout attempts. Please wait a minute and try again." };
+    return { ok: false, message: "Too many checkout attempts. Wait a minute and try again." };
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
@@ -74,7 +74,7 @@ export async function createCheckoutSession(packId: string): Promise<CheckoutErr
             currency: "usd",
             unit_amount: pack.priceCents,
             product_data: {
-              name: `${pack.name} pack — ${formatInteger(pack.tokens)} tokens`,
+              name: `${pack.name} pack: ${formatInteger(pack.tokens)} tokens`,
               description: "MelodyMarkets in-game tokens",
             },
           },

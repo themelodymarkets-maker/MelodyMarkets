@@ -73,7 +73,7 @@ describe("computePortfolioTotals", () => {
   });
 });
 
-describe("SQL parity — get_portfolio_summary", () => {
+describe("SQL parity: get_portfolio_summary", () => {
   // Real holdings, from a live user with two open positions at test time.
   const rihanna = {
     shares: 235.15112676,

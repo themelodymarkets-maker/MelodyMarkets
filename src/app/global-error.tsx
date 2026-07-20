@@ -11,7 +11,7 @@ interface GlobalErrorProps {
 }
 
 /**
- * Root error boundary — catches failures outside any route-level boundary.
+ * Root error boundary: catches failures outside any route-level boundary.
  * Must define its own <html> and <body> (Next.js requirement for global-error).
  */
 export default function GlobalError({ error, reset }: GlobalErrorProps) {
@@ -21,7 +21,9 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
 
   return (
     <html lang="en">
-      <body className="font-sans antialiased" style={{ background: "#05050a", color: "#f5f5f7" }}>
+      {/* Literal token values: this boundary renders outside the app shell
+          and cannot rely on Tailwind classes. background / foreground. */}
+      <body className="antialiased" style={{ background: "#0B111E", color: "#FFFFFF" }}>
         <main className="mx-auto flex min-h-screen max-w-6xl flex-col justify-center px-4 py-16 sm:px-6">
           <StatusCard
             title="Something went wrong"

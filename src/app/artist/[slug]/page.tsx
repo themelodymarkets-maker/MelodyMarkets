@@ -153,7 +153,9 @@ export default async function ArtistPage({ params }: ArtistPageProps) {
 
   return (
     <PageShell>
-      <div className="mx-auto w-full max-w-5xl">
+      {/* pb clears the mobile sticky trade bar; removed at lg where the strip
+          sits inline in the sidebar. */}
+      <div className="mx-auto w-full max-w-5xl pb-28 lg:pb-0">
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px] lg:items-start">
           <div className="min-w-0">
             <Card>

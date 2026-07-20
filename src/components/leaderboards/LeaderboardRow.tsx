@@ -1,4 +1,4 @@
-import { formatPercent, formatTokenAmount } from "@/lib/format";
+import { Num } from "@/components/ui/Num";
 import { cn } from "@/lib/utils";
 import { RankBadge } from "./RankBadge";
 import type { LeaderboardEntry, LeaderboardKind } from "./types";
@@ -6,31 +6,32 @@ import type { LeaderboardEntry, LeaderboardKind } from "./types";
 interface LeaderboardRowProps {
   entry: LeaderboardEntry;
   kind: LeaderboardKind;
-  /** Highlights the row (accent tint + "You" tag) when it's the signed-in user. */
+  /** Highlights the row (cyan tint + "You" tag) when it's the signed-in user. */
   isCurrentUser?: boolean;
 }
 
 /**
- * A single ranked trader. Shared by both boards and by the pinned "you" row:
- * the leftmost `RankBadge` gives the top three their medal styling, and the
- * right side shows whichever stat this board ranks by -- a green/red return %
- * for the 'return' board, or the total portfolio value for the 'value' board.
+ * A single ranked trader. Shared by both boards and by the pinned "you" row.
+ * The rank badge, avatar, and stat are all shrink-0; only the username flexes
+ * and truncates, so a long name never pushes the rank or the stat off screen.
  */
 export function LeaderboardRow({ entry, kind, isCurrentUser = false }: LeaderboardRowProps) {
   return (
     <div
       className={cn(
-        "flex items-center gap-4 px-4 py-3 sm:px-6",
-        isCurrentUser ? "bg-accent-cyan/5" : "hover:bg-surface-hover",
+        "flex items-center gap-3 px-4 py-3 sm:gap-4 sm:px-6",
+        isCurrentUser ? "bg-accent/5" : "hover:bg-border",
       )}
     >
       <RankBadge rank={entry.rank} />
       <UserAvatar username={entry.username} avatarUrl={entry.avatarUrl} />
 
       <div className="flex min-w-0 flex-1 items-center gap-2">
-        <p className="truncate font-medium text-foreground">{entry.username}</p>
+        <p className="truncate text-sm font-medium text-foreground" title={entry.username}>
+          {entry.username}
+        </p>
         {isCurrentUser && (
-          <span className="shrink-0 rounded-full bg-accent-cyan/15 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-accent-cyan uppercase">
+          <span className="shrink-0 rounded-control bg-accent/15 px-2 py-0.5 display-label text-2xs text-accent">
             You
           </span>
         )}
@@ -46,23 +47,23 @@ function RowStat({ entry, kind }: { entry: LeaderboardEntry; kind: LeaderboardKi
   if (kind === "return") {
     const direction = entry.returnPercent > 0 ? "up" : entry.returnPercent < 0 ? "down" : "flat";
     return (
-      <span
+      <Num
+        value={entry.returnPercent}
+        variant="percent"
         className={cn(
-          "shrink-0 text-right text-lg font-semibold tabular-nums",
+          "shrink-0 whitespace-nowrap text-right text-lg",
           direction === "up" && "text-gain",
           direction === "down" && "text-loss",
           direction === "flat" && "text-muted",
         )}
-      >
-        {formatPercent(entry.returnPercent)}
-      </span>
+      />
     );
   }
 
   return (
-    <span className="shrink-0 text-right text-lg font-semibold text-foreground tabular-nums">
-      {formatTokenAmount(entry.totalValue)}
-      <span className="ml-1.5 text-xs font-normal text-muted">tokens</span>
+    <span className="shrink-0 whitespace-nowrap text-right text-lg text-foreground">
+      <Num value={entry.totalValue} variant="token" />
+      <span className="ml-1.5 text-xs text-muted">tokens</span>
     </span>
   );
 }
@@ -71,7 +72,7 @@ function UserAvatar({ username, avatarUrl }: { username: string; avatarUrl: stri
   if (!avatarUrl) {
     return (
       <span
-        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent-gradient text-sm font-semibold text-white"
+        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-border text-sm font-bold text-foreground"
         aria-hidden="true"
       >
         {username.charAt(0).toUpperCase()}

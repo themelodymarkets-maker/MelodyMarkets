@@ -13,16 +13,16 @@ Browser (React client components)
     ▼
 Next.js Server (Server Components, Server Actions, Route Handlers)
     │
-    ├─ Supabase (anon key + user JWT) — reads, execute_trade RPC
-    ├─ Supabase Admin (service role) — webhooks, cron, seed
-    ├─ Stripe API — checkout session creation
-    └─ Last.fm API — artist ingestion (cron/seed only)
+    ├─ Supabase (anon key + user JWT): reads, execute_trade RPC
+    ├─ Supabase Admin (service role): webhooks, cron, seed
+    ├─ Stripe API: checkout session creation
+    └─ Last.fm API: artist ingestion (cron/seed only)
     │
     ▼
 Postgres (Supabase)
     ├─ RLS on all tables; economic writes via SECURITY DEFINER functions
-    ├─ execute_trade — atomic AMM trades
-    ├─ check_rate_limit — serverless-safe rate limiting
+    ├─ execute_trade: atomic AMM trades
+    ├─ check_rate_limit: serverless-safe rate limiting
     └─ Portfolio / leaderboard RPCs
 ```
 
@@ -45,9 +45,9 @@ Route definitions using the App Router. Each folder maps to a URL segment; `page
 
 Server Actions (marked `"use server"`):
 
-- `trade.ts` — `submitTrade` → `executeTrade`
-- `checkout.ts` — `createCheckoutSession` → Stripe redirect
-- `auth.ts` — `signInWithEmail`, `signUpWithEmail` with per-IP rate limiting
+- `trade.ts`: `submitTrade` calls `executeTrade`
+- `checkout.ts`: `createCheckoutSession` starts the Stripe redirect
+- `auth.ts`: `signInWithEmail`, `signUpWithEmail` with per-IP rate limiting
 
 ### `src/app/api`
 
@@ -64,9 +64,9 @@ Route Handlers:
 
 Feature and UI components. Key areas:
 
-- `ui/` — primitives (`Button`, `Card`, `Input`, `Toast`, `StatusCard`)
-- `layout/` — `Header`, `Logo`, `PageShell`
-- `artist/`, `markets/`, `portfolio/`, `leaderboards/`, `store/` — feature views
+- `ui/`: primitives (`Button`, `Card`, `Input`, `Num`, `Explain`, `Toast`, `StatusCard`)
+- `layout/`: `Header`, `Logo`, `TokenBalanceChip`, `PageShell`
+- `artist/`, `markets/`, `portfolio/`, `leaderboards/`, `store/`: feature views
 
 ### `src/lib`
 
@@ -77,7 +77,7 @@ Framework-agnostic business logic and server utilities:
 | `amm.ts` | Pure constant-product AMM math (`quoteTrade`) |
 | `trade.ts` | Server-side `executeTrade` wrapper + error mapping |
 | `portfolio.ts`, `leaderboard.ts`, `market.ts` | Display metrics and data helpers |
-| `format.ts` | Shared number/date formatting |
+| `format.ts` | Shared number/date formatting (backs the `<Num />` component) |
 | `rate-limit.ts` | Postgres-backed rate limiting (see tradeoff below) |
 | `supabase/` | Browser, server, admin, and middleware clients |
 | `site-metadata.ts` | Shared SEO / OG metadata helpers |
@@ -88,7 +88,7 @@ Postgres schema, RLS policies, and `SECURITY DEFINER` functions. The trade engin
 
 ## Authentication
 
-Supabase Auth with cookie-based sessions. Middleware (`src/middleware.ts` → `src/lib/supabase/middleware.ts`) refreshes tokens and protects `/portfolio`.
+Supabase Auth with cookie-based sessions. Middleware (`src/middleware.ts` calls `src/lib/supabase/middleware.ts`) refreshes tokens and protects `/portfolio`.
 
 Sign-in and sign-up run through server actions (`src/app/actions/auth.ts`) with per-IP rate limiting before Supabase validates credentials. Profile rows are created by the `handle_new_user` database trigger on signup.
 
@@ -120,7 +120,7 @@ Token pack catalog lives in `src/lib/token-packs.ts` (not Stripe Dashboard). Tok
 
 Implemented in `src/lib/rate-limit.ts`, backed by the `check_rate_limit` Postgres function.
 
-**Why Postgres, not in-memory or Redis:** Vercel serverless instances do not share memory. Postgres is already in the request path, adds no new infrastructure, and works across all instances. Tradeoff: one extra DB round trip per guarded request — acceptable at this scale; revisit Redis if traffic grows significantly.
+**Why Postgres, not in-memory or Redis:** Vercel serverless instances do not share memory. Postgres is already in the request path, adds no new infrastructure, and works across all instances. Tradeoff: one extra DB round trip per guarded request, acceptable at this scale; revisit Redis if traffic grows significantly.
 
 | Action | Limit | Bucket |
 |--------|-------|--------|
@@ -134,8 +134,8 @@ Fails open if the limiter errors (protective guard, not a correctness gate).
 
 `price_snapshots` is append-only. Rows are written from exactly two places:
 
-- `execute_trade` (`source: 'trade'`) — one row per executed trade
-- `/api/cron/snapshot` (`source: 'cron'`) — one row per active market, daily
+- `execute_trade` (`source: 'trade'`): one row per executed trade
+- `/api/cron/snapshot` (`source: 'cron'`): one row per active market, daily
 
 Charts render real rows only; downsampling buckets time and keeps the last real row per bucket (see `src/lib/price-history.ts`).
 
@@ -145,11 +145,17 @@ Scheduled jobs live under `src/app/api/cron/*` and share `isAuthorizedCronReques
 
 Schedules are in `vercel.json`. The snapshot job runs once daily (Vercel Hobby plan constraint). When `CRON_SECRET` is set, Vercel Cron attaches the bearer token automatically.
 
-`/api/admin/seed` is not scheduled — trigger manually for initial artist ingestion.
+`/api/admin/seed` is not scheduled: trigger manually for initial artist ingestion.
 
 ## Design system
 
-Colors, fonts, and radii are Tailwind theme tokens in `src/app/globals.css` (`@theme` block). Shared formatting lives in `src/lib/format.ts`. Branded error/404 states use `StatusCard`.
+"Studio Console": warm graphite panels, bone-white silkscreen labels, amber VU-meter backlighting. All colors, fonts, and radii are Tailwind theme tokens in `src/app/globals.css` (`@theme`), mirrored as `:root` custom properties for SVG and generated images. No arbitrary hex in components.
+
+Surfaces: `console`, `deck`, `rail`. Text: `silkscreen`, `label`. Amber: `vu`, `vu-dim`. Market data: `gain`, `loss`.
+
+**The color rule:** amber is the brand; green and red are market data only. If a color tells the user about money it is green or red; if it tells them about the product it is amber. Never color a button, link, badge, or decoration green or red.
+
+Three type roles: DISPLAY (Archivo, uppercase faceplate labels), BODY (Public Sans, all prose), DATA (IBM Plex Mono, tabular, every number). Radii: 4px controls, 8px cards; only avatars are fully round. Elevation is surface color plus a 1px `rail` seam, never a drop shadow. The signature element is `ImpactMeter`, a VU meter that renders price impact. Every number renders through `<Num />` (`src/components/ui/Num.tsx`), and `<Explain />` teaches key terms inline.
 
 ## Security model
 

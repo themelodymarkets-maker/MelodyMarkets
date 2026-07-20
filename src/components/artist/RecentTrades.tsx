@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
-import { formatRelativeTime, formatShares, formatTokenAmount } from "@/lib/format";
+import { Num } from "@/components/ui/Num";
+import { formatRelativeTime } from "@/lib/format";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import type { Tables, Trade } from "@/types/database";
@@ -19,7 +20,7 @@ const MAX_ROWS = 20;
  * Client Component: the artist's live trade tape. Seeded with the trades the
  * server already fetched (see `src/app/artist/[slug]/page.tsx`), then keeps
  * itself current by subscribing to Realtime INSERTs on `trades` for this
- * artist -- so a fill from anyone (this user or another) appears at the top
+ * artist, so a fill from anyone (this user or another) appears at the top
  * without a reload. New rows are de-duplicated against the seed/optimistic
  * updates by trade id.
  */
@@ -56,18 +57,16 @@ export function RecentTrades({ artistId, initialTrades }: RecentTradesProps) {
   return (
     <Card className="mt-6 overflow-hidden p-0">
       <div className="border-b border-border px-6 py-4">
-        <h2 className="text-lg font-semibold text-foreground">Recent trades</h2>
+        <h2 className="display-label text-sm text-foreground">Recent trades</h2>
       </div>
 
       {trades.length === 0 ? (
         <div className="px-6 py-10 text-center">
-          <p className="text-sm font-medium text-foreground">No trades yet</p>
-          <p className="mt-1 text-sm text-muted">
-            Be the first to trade this artist — activity shows up here in real time.
-          </p>
+          <p className="text-sm text-foreground">No trades yet.</p>
+          <p className="mt-1 text-sm text-muted">Buys and sells show up here in real time.</p>
         </div>
       ) : (
-        <div className="divide-y divide-border">
+        <div className="divide-y divide-rail">
           {trades.map((trade) => (
             <TradeRow key={trade.id} trade={trade} />
           ))}
@@ -81,23 +80,35 @@ function TradeRow({ trade }: { trade: Trade }) {
   const isBuy = trade.side === "buy";
 
   return (
-    <div className="flex items-center gap-4 px-6 py-3">
+    <div className="flex items-center gap-3 px-4 py-3 sm:px-6">
       <span
         className={cn(
-          "w-14 shrink-0 rounded-full px-2.5 py-1 text-center text-xs font-semibold uppercase",
-          isBuy ? "bg-gain/10 text-gain" : "bg-loss/10 text-loss",
+          "flex w-12 shrink-0 items-center gap-1 display-label text-2xs",
+          isBuy ? "text-foreground" : "text-muted",
         )}
       >
-        {trade.side}
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.5}
+          className={cn("h-3 w-3", !isBuy && "rotate-180")}
+          aria-hidden="true"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 19V5M6 11l6-6 6 6" />
+        </svg>
+        {isBuy ? "Buy" : "Sell"}
       </span>
 
-      <span className="min-w-0 flex-1 truncate text-sm text-foreground">
-        <span className="font-medium tabular-nums">{formatShares(Number(trade.shares))}</span>{" "}
-        <span className="text-muted">shares @</span>{" "}
-        <span className="font-medium tabular-nums">{formatTokenAmount(Number(trade.price_per_share))}</span>
+      <span className="min-w-0 flex-1 whitespace-nowrap text-sm text-muted">
+        <Num value={Number(trade.shares)} variant="share" className="text-foreground" />
+        <span className="mx-1">at</span>
+        <Num value={Number(trade.price_per_share)} variant="price" className="text-foreground" />
       </span>
 
-      <span className="shrink-0 text-xs text-muted">{formatRelativeTime(trade.created_at)}</span>
+      <span className="shrink-0 whitespace-nowrap text-xs text-muted">
+        {formatRelativeTime(trade.created_at)}
+      </span>
     </div>
   );
 }

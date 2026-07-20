@@ -18,7 +18,7 @@ export async function Header() {
   } = await supabase.auth.getUser();
 
   // Whether to show "Sign Out" is decided purely from `user`. The profile
-  // lookup below is only used for the *display name* — if it fails or the
+  // lookup below is only used for the *display name*: if it fails or the
   // row is momentarily missing, an authenticated user must still see the
   // Sign Out button rather than incorrectly falling back to "Sign In".
   let username: string | null = null;

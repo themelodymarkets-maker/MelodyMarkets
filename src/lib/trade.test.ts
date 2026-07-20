@@ -30,14 +30,14 @@ function feelessBuyShares({ tokenReserve, shareReserve }: Reserves, amount: numb
   return shareReserve - (tokenReserve * shareReserve) / (tokenReserve + amount);
 }
 
-describe("quoteTrade — constants", () => {
+describe("quoteTrade: constants", () => {
   it("uses a 1% fee (0.99 factor)", () => {
     expect(TRADE_FEE_RATE).toBe(0.01);
     expect(FEE_FACTOR).toBeCloseTo(0.99, 12);
   });
 });
 
-describe("quoteTrade — buy", () => {
+describe("quoteTrade: buy", () => {
   const reserves: Reserves = { tokenReserve: 1000, shareReserve: 1000 };
 
   it("computes constant-product shares_out with the 1% fee applied to the input", () => {
@@ -74,7 +74,7 @@ describe("quoteTrade — buy", () => {
   });
 });
 
-describe("quoteTrade — sell", () => {
+describe("quoteTrade: sell", () => {
   const reserves: Reserves = { tokenReserve: 1000, shareReserve: 1000 };
 
   it("computes gross constant-product proceeds then skims 1% for the seller", () => {
@@ -104,7 +104,7 @@ describe("quoteTrade — sell", () => {
   });
 });
 
-describe("quoteTrade — round trip", () => {
+describe("quoteTrade: round trip", () => {
   it("buying then immediately selling the shares back loses roughly two fees", () => {
     const reserves: Reserves = { tokenReserve: 5_000_000, shareReserve: 1_000_000 };
     const spend = 1000;
@@ -123,7 +123,7 @@ describe("quoteTrade — round trip", () => {
   });
 });
 
-describe("quoteTrade — SQL parity", () => {
+describe("quoteTrade: SQL parity", () => {
   // Real reserves from the live Olivia Rodrigo market at test time.
   const reserves: Reserves = { tokenReserve: 3268999, shareReserve: 1000000 };
 
@@ -152,7 +152,7 @@ describe("quoteTrade — SQL parity", () => {
   });
 });
 
-describe("quoteTrade — validation", () => {
+describe("quoteTrade: validation", () => {
   const reserves: Reserves = { tokenReserve: 1000, shareReserve: 1000 };
 
   it("rejects non-positive amounts", () => {

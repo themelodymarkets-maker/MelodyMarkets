@@ -133,7 +133,7 @@ export default async function PortfolioPage() {
   return (
     <PageShell>
       <div className="mx-auto w-full max-w-5xl">
-        <h1 className="text-2xl font-semibold text-foreground">Portfolio</h1>
+        <h1 className="display-label text-xl text-foreground">Portfolio</h1>
         <p className="mt-1 text-sm text-muted">Your holdings, performance, and trade history.</p>
 
         <div className="mt-6">

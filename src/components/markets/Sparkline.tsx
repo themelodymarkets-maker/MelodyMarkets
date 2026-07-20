@@ -27,7 +27,7 @@ export function Sparkline({ prices, width = 72, height = 28, className }: Sparkl
           y1={height / 2}
           x2={width - 4}
           y2={height / 2}
-          stroke="var(--color-border)"
+          stroke="var(--border)"
           strokeWidth={2}
           strokeLinecap="round"
         />
@@ -47,7 +47,7 @@ export function Sparkline({ prices, width = 72, height = 28, className }: Sparkl
   });
 
   const isUp = prices[prices.length - 1] >= prices[0];
-  const strokeColor = isUp ? "var(--color-gain)" : "var(--color-loss)";
+  const strokeColor = isUp ? "var(--gain)" : "var(--loss)";
 
   return (
     <svg width={width} height={height} className={className} aria-hidden="true">
@@ -58,6 +58,7 @@ export function Sparkline({ prices, width = 72, height = 28, className }: Sparkl
         strokeWidth={1.75}
         strokeLinecap="round"
         strokeLinejoin="round"
+        style={{ filter: `drop-shadow(0 0 3px ${strokeColor})` }}
       />
     </svg>
   );

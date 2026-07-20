@@ -6,7 +6,7 @@ import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // Signature verification needs the exact raw bytes Stripe signed, and the
-// service-role client must run server-side — so this handler is Node-only.
+// service-role client must run server-side, so this handler is Node-only.
 export const runtime = "nodejs";
 
 // PostgREST/Postgres unique-violation SQLSTATE, raised by the partial unique
@@ -17,7 +17,7 @@ const UNIQUE_VIOLATION = "23505";
  * POST /api/webhooks/stripe
  *
  * The ONLY place token purchases are credited. Tokens are never granted on the
- * client or on the success redirect — only here, after Stripe's signature is
+ * client or on the success redirect, only here, after Stripe's signature is
  * verified against the RAW request body.
  *
  * Flow:
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Bad request" }, { status: 400 });
   }
 
-  // The raw, unparsed body — exactly what Stripe signed.
+  // The raw, unparsed body, exactly what Stripe signed.
   const rawBody = await request.text();
 
   let event: Stripe.Event;
@@ -77,7 +77,7 @@ async function creditPurchase(session: Stripe.Checkout.Session): Promise<void> {
   const tokens = Number(session.metadata?.tokens);
 
   if (!userId || !Number.isFinite(tokens) || tokens <= 0) {
-    // A validly-signed event we can't act on — log and ack so Stripe doesn't
+    // A validly-signed event we can't act on: log and ack so Stripe doesn't
     // retry forever. This should never happen with our own sessions.
     console.error(
       `[stripe webhook] session ${session.id} has invalid metadata; skipping`,

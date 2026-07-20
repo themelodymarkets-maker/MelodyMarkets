@@ -10,10 +10,10 @@ import {
   YAxis,
   type TooltipContentProps,
 } from "recharts";
-import type { NameType, ValueType } from "recharts/types/component/DefaultTooltipContent";
 import { Card } from "@/components/ui/Card";
 import { PriceChangePill } from "@/components/ui/PriceChangePill";
-import { computePercentChange, formatTokenAmount } from "@/lib/format";
+import { Num } from "@/components/ui/Num";
+import { computePercentChange } from "@/lib/format";
 import {
   PRICE_HISTORY_RANGES,
   PRICE_HISTORY_RANGE_LABELS,
@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 
 interface PriceChartProps {
   artistId: string;
-  /** ISO timestamp the artist's market was created -- used for the honesty note. */
+  /** ISO timestamp the artist's market was created, used for the honesty note. */
   marketCreatedAt: string;
   initialRange: PriceHistoryRange;
   initialPoints: PricePoint[];
@@ -48,11 +48,10 @@ const openedDateFormatter = new Intl.DateTimeFormat("en-US", {
  *
  * Renders exactly the rows `price_snapshots` contains for the selected range
  * (fetched server-side for `initialRange`, and on demand for every other tab
- * via `/api/artists/:artistId/price-history`) -- never an interpolated or
+ * via `/api/artists/:artistId/price-history`), never an interpolated or
  * fabricated point. New points are appended the moment a real row is
  * INSERTed (a trade or the daily cron job), via a Realtime subscription on
- * `price_snapshots`, never via a client-side guess at "what the price is
- * now".
+ * `price_snapshots`, never via a client-side guess at "what the price is now".
  */
 export function PriceChart({
   artistId,
@@ -105,7 +104,7 @@ export function PriceChart({
   }
 
   // Live updates: append every new real price_snapshots row for this artist
-  // (written by a trade or the daily cron) to every cached range -- the new
+  // (written by a trade or the daily cron) to every cached range: the new
   // row's timestamp is "now", so it always falls inside every range's window.
   useEffect(() => {
     const supabase = createClient();
@@ -151,7 +150,7 @@ export function PriceChart({
     <Card className="mt-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Price history</h2>
+          <h2 className="display-label text-sm text-foreground">Price history</h2>
           <ChangeSummary points={points} />
         </div>
         <RangeTabs range={range} onChange={handleRangeChange} />
@@ -159,9 +158,9 @@ export function PriceChart({
 
       <div className="mt-4 h-64">
         {isLoading && !points ? (
-          <ChartMessage text="Loading price history…" />
+          <ChartMessage text="Loading price history." />
         ) : hasError && !points ? (
-          <ChartMessage text="Couldn't load price history. Try another range." />
+          <ChartMessage text="Could not load price history. Try another range." />
         ) : !points || points.length === 0 ? (
           <ChartMessage text="No price activity in this range yet." />
         ) : (
@@ -171,7 +170,7 @@ export function PriceChart({
 
       {showHonestyNote && (
         <p className="mt-4 text-xs text-muted">
-          Market opened {openedDateFormatter.format(new Date(marketCreatedAt))} — history builds in
+          Market opened {openedDateFormatter.format(new Date(marketCreatedAt))}. History builds in
           real time.
         </p>
       )}
@@ -188,13 +187,11 @@ function ChangeSummary({ points }: { points: PricePoint[] | undefined }) {
   const last = points[points.length - 1].price;
   const { percent } = computePercentChange(first, last);
   const diff = last - first;
-  const sign = diff > 0 ? "+" : diff < 0 ? "-" : "";
 
   return (
     <div className="mt-1 flex items-center gap-2">
-      <span className="text-sm font-medium text-foreground tabular-nums">
-        {sign}
-        {formatTokenAmount(Math.abs(diff))} tokens
+      <span className="text-sm text-foreground">
+        <Num value={diff} variant="token" signed /> tokens
       </span>
       <PriceChangePill percent={percent} />
     </div>
@@ -209,17 +206,17 @@ function RangeTabs({
   onChange: (range: PriceHistoryRange) => void;
 }) {
   return (
-    <div className="inline-flex items-center gap-1 rounded-full border border-border bg-surface p-1">
+    <div className="inline-flex items-center gap-1 rounded-full border border-border bg-background p-1">
       {PRICE_HISTORY_RANGES.map((option) => (
         <button
           key={option}
           type="button"
           onClick={() => onChange(option)}
           className={cn(
-            "rounded-full px-3 py-1 text-xs font-semibold transition-colors duration-150",
+            "min-h-11 min-w-11 rounded-full px-3 text-xs display-label transition-[transform,background-color,color,box-shadow] duration-100 ease-out active:scale-95",
             option === range
-              ? "bg-accent-gradient text-white"
-              : "text-muted hover:bg-surface-hover hover:text-foreground",
+              ? "bg-accent text-background glow-accent"
+              : "text-muted hover:text-foreground",
           )}
           aria-pressed={option === range}
         >
@@ -232,7 +229,7 @@ function RangeTabs({
 
 function ChartMessage({ text }: { text: string }) {
   return (
-    <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-border">
+    <div className="flex h-full items-center justify-center rounded-card border border-dashed border-border">
       <p className="text-sm text-muted">{text}</p>
     </div>
   );
@@ -261,23 +258,15 @@ interface CrosshairCursorProps {
   height?: number;
 }
 
-/** Vertical dashed crosshair + a dot pinned to the hovered price, drawn over the area chart. */
+/** Vertical crosshair + a dot pinned to the hovered price, drawn over the area chart. */
 function CrosshairCursor({ points, height }: CrosshairCursorProps) {
   if (!points || points.length === 0 || height === undefined) return null;
   const { x, y } = points[0];
 
   return (
     <g>
-      <line
-        x1={x}
-        y1={0}
-        x2={x}
-        y2={height}
-        stroke="var(--color-accent-cyan)"
-        strokeWidth={1}
-        strokeDasharray="4 4"
-      />
-      <circle cx={x} cy={y} r={4} fill="var(--color-accent-cyan)" stroke="var(--color-background)" strokeWidth={2} />
+      <line x1={x} y1={0} x2={x} y2={height} stroke="var(--accent)" strokeWidth={1} strokeDasharray="4 4" />
+      <circle cx={x} cy={y} r={4} fill="var(--accent)" stroke="var(--background)" strokeWidth={2} />
     </g>
   );
 }
@@ -292,15 +281,15 @@ function PriceAreaChart({ points, range }: { points: PricePoint[]; range: PriceH
   }, [points]);
 
   const renderTooltip = useCallback(
-    ({ active, payload }: TooltipContentProps<ValueType, NameType>) => {
+    ({ active, payload }: TooltipContentProps) => {
       if (!active || !payload || payload.length === 0) return null;
       const point = payload[0].payload as PricePoint;
       return (
-        <div className="rounded-lg border border-border bg-surface px-3 py-2 shadow-lg">
-          <p className="text-sm font-semibold text-foreground tabular-nums">
-            {formatTokenAmount(point.price)} tokens
+        <div className="rounded-card border border-border bg-surface px-3 py-2">
+          <p className="text-sm text-foreground">
+            <Num value={point.price} variant="price" /> tokens
           </p>
-          <p className="mt-0.5 text-xs text-muted">{formatTimestamp(point.createdAt, range)}</p>
+          <p className="mt-0.5 font-data text-xs text-muted">{formatTimestamp(point.createdAt, range)}</p>
         </div>
       );
     },
@@ -308,37 +297,38 @@ function PriceAreaChart({ points, range }: { points: PricePoint[]; range: PriceH
   );
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <AreaChart data={points} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
-        <defs>
-          <linearGradient id="priceAreaFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--color-accent-purple)" stopOpacity={0.45} />
-            <stop offset="100%" stopColor="var(--color-accent-cyan)" stopOpacity={0.03} />
-          </linearGradient>
-          <linearGradient id="priceLineStroke" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="var(--color-accent-purple)" />
-            <stop offset="100%" stopColor="var(--color-accent-cyan)" />
-          </linearGradient>
-        </defs>
-
-        <XAxis dataKey="createdAt" hide />
-        <YAxis domain={domain} hide />
-        <Tooltip
-          content={renderTooltip}
-          cursor={<CrosshairCursor />}
-          isAnimationActive={false}
-        />
-        <Area
-          type="monotone"
-          dataKey="price"
-          stroke="url(#priceLineStroke)"
-          strokeWidth={2.5}
-          fill="url(#priceAreaFill)"
-          dot={false}
-          activeDot={false}
-          isAnimationActive={false}
-        />
-      </AreaChart>
-    </ResponsiveContainer>
+    <div className="mm-chart-heartbeat h-full w-full">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={points} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
+          <defs>
+            <linearGradient id="mm-price-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.45} />
+              <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <XAxis dataKey="createdAt" hide />
+          <YAxis domain={domain} hide />
+          <Tooltip
+            content={renderTooltip}
+            cursor={<CrosshairCursor />}
+            isAnimationActive={false}
+            // Keep the tooltip inside the chart box so it never renders off the
+            // side of the screen on mobile.
+            allowEscapeViewBox={{ x: false, y: false }}
+            wrapperStyle={{ zIndex: 1 }}
+          />
+          <Area
+            type="monotone"
+            dataKey="price"
+            stroke="var(--accent)"
+            strokeWidth={2.75}
+            fill="url(#mm-price-fill)"
+            dot={false}
+            activeDot={false}
+            isAnimationActive={false}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
   );
 }

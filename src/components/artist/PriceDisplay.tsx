@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { PriceChangePill } from "@/components/ui/PriceChangePill";
-import { formatTokenAmount } from "@/lib/format";
+import { Num } from "@/components/ui/Num";
 import { computeSpotPrice, get24hPriceChange } from "@/lib/market";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/types/database";
@@ -48,11 +48,11 @@ export function PriceDisplay({ artistId, initialPrice, referencePrice }: PriceDi
 
   return (
     <div className="flex flex-wrap items-end gap-3">
-      <span className="text-4xl font-semibold text-foreground tabular-nums sm:text-5xl">
-        {formatTokenAmount(currentPrice)}
-        <span className="ml-2 text-base font-normal text-muted">tokens / share</span>
+      <span className="text-2xl text-foreground text-glow">
+        <Num value={currentPrice} variant="price" />
+        <span className="ml-2 text-base text-muted">tokens / share</span>
       </span>
-      <PriceChangePill percent={percent} className="mb-2" />
+      <PriceChangePill percent={percent} className="mb-1.5" />
     </div>
   );
 }

@@ -82,7 +82,7 @@ curl -X POST "https://<your-domain>/api/admin/seed" \
 
 ---
 
-## 5. Stripe live mode (future decision — do not rush)
+## 5. Stripe live mode (future decision, do not rush)
 
 > **Keep test mode until you are ready to accept real payments.**
 

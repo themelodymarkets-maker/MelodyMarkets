@@ -3,7 +3,10 @@ import { ImageResponse } from "next/og";
 export const size = { width: 32, height: 32 };
 export const contentType = "image/png";
 
-/** Branded favicon — gradient circle with the MelodyMarkets "M" mark. */
+/**
+ * Branded favicon: the MelodyMarkets "M" on electric cyan.
+ * Literal token hex because ImageResponse renders outside the app.
+ */
 export default function Icon() {
   return new ImageResponse(
     (
@@ -14,11 +17,11 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(90deg, #a855f7, #22d3ee)",
-          borderRadius: "50%",
-          color: "#ffffff",
-          fontSize: 18,
-          fontWeight: 700,
+          background: "#00F2FE",
+          borderRadius: 999,
+          color: "#0B111E",
+          fontSize: 20,
+          fontWeight: 600,
         }}
       >
         M

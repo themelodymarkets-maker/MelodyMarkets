@@ -1,5 +1,7 @@
+import type { ReactNode } from "react";
 import { Card } from "@/components/ui/Card";
-import { formatCompactNumber, formatTokenAmount } from "@/lib/format";
+import { Num } from "@/components/ui/Num";
+import { Explain } from "@/components/ui/Explain";
 
 interface MarketStatsProps {
   /** price * share_reserve, in tokens. */
@@ -19,22 +21,35 @@ const dateFormatter = new Intl.DateTimeFormat("en-US", {
 export function MarketStats({ marketCap, snapshotCount, createdAt }: MarketStatsProps) {
   return (
     <Card>
-      <h2 className="text-xs font-semibold tracking-wide text-muted uppercase">Market stats</h2>
+      <h2 className="display-label text-sm text-foreground">Market stats</h2>
 
       <dl className="mt-4 space-y-3">
-        <StatRow label="Market cap" value={`${formatTokenAmount(marketCap)} tokens`} />
-        <StatRow label="Price snapshots" value={formatCompactNumber(snapshotCount)} />
-        <StatRow label="Market created" value={dateFormatter.format(new Date(createdAt))} />
+        <StatRow
+          label={<Explain term="market cap"><span className="text-muted">Market cap</span></Explain>}
+          value={
+            <span className="text-foreground">
+              <Num value={marketCap} variant="token" /> tokens
+            </span>
+          }
+        />
+        <StatRow
+          label="Price snapshots"
+          value={<Num value={snapshotCount} variant="count" className="text-foreground" />}
+        />
+        <StatRow
+          label="Market created"
+          value={<span className="font-data text-foreground">{dateFormatter.format(new Date(createdAt))}</span>}
+        />
       </dl>
     </Card>
   );
 }
 
-function StatRow({ label, value }: { label: string; value: string }) {
+function StatRow({ label, value }: { label: ReactNode; value: ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-4 text-sm">
       <dt className="text-muted">{label}</dt>
-      <dd className="font-medium text-foreground tabular-nums">{value}</dd>
+      <dd>{value}</dd>
     </div>
   );
 }

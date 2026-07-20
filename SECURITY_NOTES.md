@@ -29,9 +29,9 @@ All application tables have RLS enabled. Client-writable economic tables (`token
 
 Economic mutations flow through:
 
-- `execute_trade` — trades (asserts `p_user_id = auth.uid()`)
-- `handle_new_user` trigger — signup bonus (EXECUTE revoked from clients)
-- Service role — Stripe webhook credits, cron snapshots, admin seed
+- `execute_trade`: trades (asserts `p_user_id = auth.uid()`)
+- `handle_new_user` trigger: signup bonus (EXECUTE revoked from clients)
+- Service role: Stripe webhook credits, cron snapshots, admin seed
 
 ## Admin and cron routes
 
@@ -66,7 +66,7 @@ Implemented in `src/lib/rate-limit.ts`, backed by Postgres `check_rate_limit` (s
 | Checkout | 5 / 60s | `checkout-ip:<ip>`, `checkout-user:<userId>` |
 | Sign-in / sign-up | 10 / 15 min | `auth-ip:<ip>` |
 
-**Tradeoff:** Postgres over Redis — no new infra at this scale; fails open if the limiter errors so legitimate users are never blocked by a limiter outage.
+**Tradeoff:** Postgres over Redis, no new infra at this scale; fails open if the limiter errors so legitimate users are never blocked by a limiter outage.
 
 ## Logging hygiene
 
@@ -78,7 +78,7 @@ Server logs avoid secrets and minimize PII:
 
 ## Residual risks / accepted tradeoffs
 
-1. **Auth brute force:** Supabase Auth has its own rate limits; app adds per-IP throttling on server actions but direct Supabase API calls from a determined attacker are still possible at the Supabase layer — configure Supabase Auth rate limits in the dashboard.
+1. **Auth brute force:** Supabase Auth has its own rate limits; app adds per-IP throttling on server actions but direct Supabase API calls from a determined attacker are still possible at the Supabase layer: configure Supabase Auth rate limits in the dashboard.
 2. **Rate limiter fails open:** By design; abuse protection is best-effort, not a correctness gate.
 3. **Cron schedule:** Hobby plan allows one daily cron; hourly snapshots require Pro or an external scheduler.
 4. **Last.fm API key:** Server-only; rotate if exposed.

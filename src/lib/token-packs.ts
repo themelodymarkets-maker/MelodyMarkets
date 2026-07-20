@@ -1,5 +1,5 @@
 /**
- * Token pack catalog — the single source of truth for what a user can buy.
+ * Token pack catalog: the single source of truth for what a user can buy.
  *
  * Packs are defined here in code (never in the Stripe Dashboard) so a checkout
  * session builds its line item from `price_data` inline. That keeps the app
@@ -48,7 +48,7 @@ export const TOKEN_PACKS: readonly TokenPack[] = [
     name: "Whale",
     tokens: 30_000,
     priceCents: 1_999,
-    tagline: "Go big and corner the market.",
+    tagline: "The biggest pack, best price per token.",
   },
 ] as const;
 

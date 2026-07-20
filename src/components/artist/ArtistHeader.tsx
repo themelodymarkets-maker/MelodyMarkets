@@ -1,4 +1,4 @@
-import { formatCompactNumber } from "@/lib/format";
+import { Num } from "@/components/ui/Num";
 
 interface ArtistHeaderProps {
   name: string;
@@ -15,21 +15,25 @@ export function ArtistHeader({ name, genre, imageUrl, listeners, playcount }: Ar
       <ArtistAvatar name={name} imageUrl={imageUrl} />
 
       <div className="min-w-0">
-        <h1 className="truncate text-3xl font-semibold text-foreground">{name}</h1>
+        <h1 className="display-label text-xl break-words text-foreground">{name}</h1>
 
         {genre && (
-          <span className="mt-2 inline-block rounded-full border border-border px-2.5 py-1 text-[11px] font-medium tracking-wide text-muted uppercase">
+          <span className="mt-2 inline-block rounded-control border border-border px-2.5 py-1 display-label text-2xs text-muted">
             {genre}
           </span>
         )}
 
         <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm">
           <div className="flex items-baseline gap-1.5">
-            <dt className="font-semibold text-foreground">{formatCompactNumber(listeners)}</dt>
+            <dt className="text-foreground">
+              <Num value={listeners} variant="count" />
+            </dt>
             <dd className="text-muted">listeners</dd>
           </div>
           <div className="flex items-baseline gap-1.5">
-            <dt className="font-semibold text-foreground">{formatCompactNumber(playcount)}</dt>
+            <dt className="text-foreground">
+              <Num value={playcount} variant="count" />
+            </dt>
             <dd className="text-muted">plays</dd>
           </div>
         </dl>
@@ -42,7 +46,7 @@ function ArtistAvatar({ name, imageUrl }: { name: string; imageUrl: string | nul
   if (!imageUrl) {
     return (
       <span
-        className="flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl bg-accent-gradient text-3xl font-semibold text-white"
+        className="flex h-24 w-24 shrink-0 items-center justify-center rounded-card bg-border text-3xl font-bold text-foreground"
         aria-hidden="true"
       >
         {name.charAt(0).toUpperCase()}
@@ -52,15 +56,15 @@ function ArtistAvatar({ name, imageUrl }: { name: string; imageUrl: string | nul
 
   return (
     // Artist art comes from Last.fm/dicebear CDNs decided at ingestion time
-    // (see src/lib/lastfm.ts) -- a plain <img> is used here for the same
-    // reason as MarketRow's avatar (see that file for the full rationale).
+    // (see src/lib/lastfm.ts): a plain <img> is used here for the same reason
+    // as MarketRow's avatar (see that file for the full rationale).
     // eslint-disable-next-line @next/next/no-img-element
     <img
       src={imageUrl}
       alt=""
       width={96}
       height={96}
-      className="h-24 w-24 shrink-0 rounded-2xl object-cover"
+      className="h-24 w-24 shrink-0 rounded-card object-cover"
     />
   );
 }

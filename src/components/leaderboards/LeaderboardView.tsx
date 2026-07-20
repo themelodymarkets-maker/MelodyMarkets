@@ -12,7 +12,7 @@ import type { LeaderboardBoard, LeaderboardKind, LeaderboardStats } from "./type
 /**
  * At most one refetch per this window. Every trade INSERT arriving over
  * Realtime schedules a single trailing refetch, and further inserts within the
- * window collapse into that same pending run -- so a burst of trades costs one
+ * window collapse into that same pending run, so a burst of trades costs one
  * refresh, not one per trade, while still updating within a few seconds.
  */
 const REFRESH_INTERVAL_MS = 4000;
@@ -25,8 +25,8 @@ interface LeaderboardViewProps {
 }
 
 const TABS: Array<{ kind: LeaderboardKind; label: string }> = [
-  { kind: "return", label: "Top Returns" },
-  { kind: "value", label: "Biggest Portfolios" },
+  { kind: "return", label: "Top returns" },
+  { kind: "value", label: "Biggest portfolios" },
 ];
 
 /**
@@ -71,7 +71,7 @@ export function LeaderboardView({
 
   useEffect(() => {
     // Live updates require subscribing to trade INSERTs, which Realtime only
-    // delivers to roles that can SELECT trades -- i.e. signed-in users. Anon
+    // delivers to roles that can SELECT trades (signed-in users). Anon
     // visitors get a correct board on load but no live subscription (and no
     // "Live" indicator), rather than falsely claiming to be live.
     if (!isAuthenticated) return;
@@ -112,7 +112,7 @@ export function LeaderboardView({
     <div>
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Leaderboards</h1>
+          <h1 className="display-label text-xl text-foreground">Leaderboards</h1>
           <p className="mt-1 text-sm text-muted">The top traders across MelodyMarkets.</p>
         </div>
         {isAuthenticated && <LiveIndicator isLive={isLive} />}
@@ -123,7 +123,7 @@ export function LeaderboardView({
       </div>
 
       <div className="mt-6" role="tablist" aria-label="Leaderboard type">
-        <div className="inline-flex rounded-full border border-border bg-surface p-1">
+        <div className="inline-flex rounded-control border border-border bg-surface p-1">
           {TABS.map((tab) => {
             const isActive = tab.kind === activeTab;
             return (
@@ -134,10 +134,8 @@ export function LeaderboardView({
                 aria-selected={isActive}
                 onClick={() => setActiveTab(tab.kind)}
                 className={cn(
-                  "rounded-full px-4 py-1.5 text-sm font-medium transition-colors duration-200",
-                  isActive
-                    ? "bg-accent-gradient text-white"
-                    : "text-muted hover:text-foreground",
+                  "min-h-11 rounded-control px-4 text-sm display-label transition-colors",
+                  isActive ? "bg-accent text-background" : "text-muted hover:text-foreground",
                 )}
               >
                 {tab.label}
@@ -152,7 +150,7 @@ export function LeaderboardView({
           <EmptyState kind={activeTab} />
         ) : (
           <Card className="overflow-hidden p-0">
-            <div className="divide-y divide-border">
+            <div className="divide-y divide-rail">
               {board.entries.map((entry) => (
                 <LeaderboardRow
                   key={entry.userId}
@@ -164,7 +162,7 @@ export function LeaderboardView({
             </div>
 
             {showPinnedRow && board.myRank && (
-              <div className="border-t-2 border-accent-cyan/30 bg-accent-cyan/5">
+              <div className="border-t-2 border-accent/40 bg-accent/5">
                 <LeaderboardRow entry={board.myRank} kind={activeTab} isCurrentUser />
               </div>
             )}
@@ -179,11 +177,11 @@ function EmptyState({ kind }: { kind: LeaderboardKind }) {
   const description =
     kind === "return"
       ? "No one has traded yet. Make your first trade to claim a spot on the returns board."
-      : "No portfolios to rank yet. Check back once traders join MelodyMarkets.";
+      : "No portfolios to rank yet. Check back once traders join.";
 
   return (
     <Card className="mx-auto max-w-md text-center">
-      <h2 className="text-lg font-semibold text-foreground">Nothing to rank yet</h2>
+      <h2 className="display-label text-sm text-foreground">Nothing to rank yet</h2>
       <p className="mt-2 text-sm text-muted">{description}</p>
     </Card>
   );
@@ -191,12 +189,12 @@ function EmptyState({ kind }: { kind: LeaderboardKind }) {
 
 function LiveIndicator({ isLive }: { isLive: boolean }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted">
+    <span className="inline-flex items-center gap-1.5 display-label text-2xs text-muted">
       <span
-        className={cn("h-1.5 w-1.5 rounded-full", isLive ? "bg-gain" : "bg-muted")}
+        className={cn("h-1.5 w-1.5 rounded-full", isLive ? "bg-accent" : "bg-label")}
         aria-hidden="true"
       />
-      {isLive ? "Live" : "Connecting…"}
+      {isLive ? "Live" : "Connecting"}
     </span>
   );
 }

@@ -123,12 +123,12 @@ export function SignupForm() {
           />
 
           {formError && (
-            <p role="alert" className="text-sm text-loss">
+            <p role="alert" className="text-sm text-foreground">
               {formError}
             </p>
           )}
           {notice && (
-            <p role="status" className="text-sm text-accent-cyan">
+            <p role="status" className="text-sm text-accent">
               {notice}
             </p>
           )}

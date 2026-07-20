@@ -9,30 +9,28 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   invalid?: boolean;
 }
 
-/** Labeled text input matching the MelodyMarkets dark design system. */
+/** Labeled text input — pill shape, cobalt well, cyan focus via global ring. */
 export function Input({ label, hint, invalid, id, className, ...props }: InputProps) {
   // Fall back to the `name` attribute so the label always targets the input.
   const inputId = id ?? props.name;
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={inputId} className="text-sm font-medium text-foreground">
+      <label htmlFor={inputId} className="display-label text-2xs text-muted">
         {label}
       </label>
       <input
         id={inputId}
         aria-invalid={invalid}
+        // Errors are neutral, not red: red is reserved for downward market data.
         className={cn(
-          "rounded-xl border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted",
-          "transition-colors duration-200 focus:outline-none focus-visible:border-accent-cyan focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-cyan",
-          invalid ? "border-loss" : "border-border",
+          "min-h-11 rounded-full border bg-border px-4 text-sm text-foreground placeholder:text-muted transition-[box-shadow,border-color] duration-150",
+          invalid ? "border-accent-dim" : "border-border focus:border-accent",
           className,
         )}
         {...props}
       />
-      {hint && (
-        <p className={cn("text-xs", invalid ? "text-loss" : "text-muted")}>{hint}</p>
-      )}
+      {hint && <p className={cn("text-xs", invalid ? "text-foreground" : "text-muted")}>{hint}</p>}
     </div>
   );
 }

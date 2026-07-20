@@ -13,7 +13,7 @@ import type { Database } from "@/types/database";
  * Everything here is BEST-EFFORT and FAILS OPEN: if the limiter errors (e.g.
  * the migration hasn't been applied yet, or the DB is briefly unreachable) we
  * allow the request rather than block a legitimate user. Rate limiting is a
- * protective guard against abuse, not a correctness gate — the real economic
+ * protective guard against abuse, not a correctness gate: the real economic
  * invariants are enforced by `execute_trade` and Stripe signature checks.
  */
 
@@ -39,7 +39,7 @@ export const AUTH_IP_RATE_LIMIT: RateLimitRule = { max: 10, windowSeconds: 900 }
 /**
  * Records a hit against `bucket` and returns whether the caller is still under
  * the limit. The bucket key is `"<action>:<subject>"`, e.g. `trade:<userId>`
- * or `checkout-ip:<ip>` — never a secret.
+ * or `checkout-ip:<ip>`, never a secret.
  *
  * @returns `true` if the request is allowed, `false` if it should be blocked.
  */

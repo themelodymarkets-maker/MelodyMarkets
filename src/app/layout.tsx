@@ -1,14 +1,9 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
 import { Header } from "@/components/layout/Header";
 import { AppProviders } from "@/components/providers/AppProviders";
 import { baseMetadata } from "@/lib/site-metadata";
 import "./globals.css";
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-});
 
 export const metadata: Metadata = baseMetadata();
 
@@ -24,8 +19,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={inter.variable}>
-      <body className="font-sans antialiased">
+    <html lang="en" className={GeistSans.variable}>
+      <body className="font-body antialiased">
         <AppProviders>
           <Header />
           {children}

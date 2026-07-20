@@ -5,12 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { ConfettiBurst } from "@/components/ui/ConfettiBurst";
+import { Num } from "@/components/ui/Num";
 import { useBalance } from "@/lib/balance-context";
 import { useToast } from "@/components/ui/Toast";
 import { createCheckoutSession } from "@/app/actions/checkout";
 import { TOKEN_PACKS, formatPackPrice, type TokenPack } from "@/lib/token-packs";
-import { formatInteger, formatTokenAmount } from "@/lib/format";
+import { formatInteger } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 interface StoreViewProps {
@@ -30,7 +30,6 @@ export function StoreView({ isAuthenticated }: StoreViewProps) {
 
   const [pendingPackId, setPendingPackId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
-  const [fireKey, setFireKey] = useState(0);
   const [showSuccess, setShowSuccess] = useState(false);
   const [creditPending, setCreditPending] = useState(false);
 
@@ -46,7 +45,7 @@ export function StoreView({ isAuthenticated }: StoreViewProps) {
         // value back when something went wrong.
         const result = await createCheckoutSession(packId);
         if (result && !result.ok) {
-          toast({ variant: "error", title: "Checkout failed", description: result.message });
+          toast({ variant: "error", title: "Checkout did not start", description: result.message });
           setPendingPackId(null);
         }
       });
@@ -71,14 +70,14 @@ export function StoreView({ isAuthenticated }: StoreViewProps) {
 
     if (status !== "success") return;
 
-    // Celebrate immediately; the credit itself lands via the webhook, which can
-    // take a few seconds, so poll the balance briefly until it updates.
+    // The credit lands via the webhook, which can take a few seconds, so poll
+    // the balance briefly until it updates. No confetti here: celebration is
+    // for completing a trade, not for spending money.
     setShowSuccess(true);
-    setFireKey((k) => k + 1);
     setCreditPending(true);
     toast({
       variant: "success",
-      title: "Purchase complete!",
+      title: "Purchase complete",
       description: "Your tokens are on the way.",
     });
 
@@ -117,13 +116,11 @@ export function StoreView({ isAuthenticated }: StoreViewProps) {
     return (
       <div className="mx-auto w-full max-w-md">
         <Card className="text-center">
-          <h1 className="text-xl font-semibold text-foreground">Buy tokens</h1>
-          <p className="mt-2 text-sm text-muted">
-            Sign in to top up your balance and keep trading the artists you love.
-          </p>
+          <h1 className="display-label text-lg text-foreground">Buy tokens</h1>
+          <p className="mt-2 text-sm text-muted">Sign in to add tokens to your balance.</p>
           <Link
             href="/login"
-            className="mt-6 inline-flex items-center justify-center rounded-full bg-accent-gradient px-6 py-2.5 text-sm font-medium text-white transition-opacity duration-200 hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-cyan"
+            className="mt-6 inline-flex min-h-11 items-center justify-center rounded-control bg-accent px-6 text-sm text-background display-label transition-colors hover:bg-accent/90"
           >
             Sign in to continue
           </Link>
@@ -133,37 +130,42 @@ export function StoreView({ isAuthenticated }: StoreViewProps) {
   }
 
   return (
-    <div className="relative mx-auto w-full max-w-5xl">
-      <ConfettiBurst fireKey={fireKey} />
-
+    <div className="mx-auto w-full max-w-5xl">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Buy tokens</h1>
-          <p className="mt-1 text-sm text-muted">
-            Top up your balance to trade more artists. Tokens never expire.
-          </p>
+          <h1 className="display-label text-xl text-foreground">Buy tokens</h1>
+          <p className="mt-1 text-sm text-muted">Add tokens to your balance. Tokens do not expire.</p>
         </div>
         <span
-          className="inline-flex items-center gap-2 self-start rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground tabular-nums sm:self-auto"
+          className="inline-flex items-center gap-2 self-start rounded-control border border-border bg-background px-3 py-2 sm:self-auto"
           title="Your token balance"
         >
-          <span className="text-muted">Balance</span>
-          {isLoading || balance === null ? "—" : formatTokenAmount(balance)}
+          <span className="display-label text-2xs text-muted">Balance</span>
+          <Num
+            value={isLoading ? null : balance}
+            variant="token"
+            className="text-sm text-token text-glow-token"
+          />
         </span>
       </div>
 
       {showSuccess && (
-        <div className="mt-6 rounded-card border border-gain/40 bg-gain/10 p-4">
-          <p className="text-sm font-semibold text-gain">Thanks for your purchase! 🎉</p>
-          <p className="mt-1 text-xs text-muted">
+        <div className="mt-6 rounded-card border border-border bg-surface p-4">
+          <p className="text-sm text-foreground">Purchase complete.</p>
+          <p className="mt-1 text-sm text-muted">
             {creditPending
-              ? "Your tokens are being credited — this can take a few seconds. Your balance will update automatically."
+              ? "Your tokens are being credited. This can take a few seconds, and your balance updates on its own."
               : "Your tokens have been added to your balance."}
           </p>
         </div>
       )}
 
-      <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Non-redeemable, stated plainly and up front, not buried in a footer. */}
+      <p className="mt-6 font-data text-xs text-muted">
+        Tokens are for playing MelodyMarkets. They are not real money and cannot be cashed out.
+      </p>
+
+      <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {TOKEN_PACKS.map((pack) => (
           <PackCard
             key={pack.id}
@@ -175,9 +177,8 @@ export function StoreView({ isAuthenticated }: StoreViewProps) {
         ))}
       </div>
 
-      <p className="mt-6 text-center text-xs text-muted">
-        Payments are securely processed by Stripe. Tokens are credited after your payment is
-        confirmed.
+      <p className="mt-6 text-center text-sm text-muted">
+        Payments are handled by Stripe. Tokens are credited after your payment is confirmed.
       </p>
     </div>
   );
@@ -195,42 +196,35 @@ function PackCard({
   onBuy: () => void;
 }) {
   return (
-    <Card
-      className={cn(
-        "relative flex flex-col",
-        pack.highlight && "border-accent-purple/60 hover:border-accent-purple",
-      )}
-    >
+    <Card className={cn("relative flex flex-col", pack.highlight && "border-accent")}>
       {pack.highlight && (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-accent-gradient px-3 py-1 text-xs font-semibold text-white">
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-control bg-accent px-3 py-1 display-label text-2xs text-background">
           Best value
         </span>
       )}
 
-      <h2 className="text-lg font-semibold text-foreground">{pack.name}</h2>
+      <h2 className="display-label text-sm text-foreground">{pack.name}</h2>
       <p className="mt-1 text-sm text-muted">{pack.tagline}</p>
 
       <div className="mt-6">
-        <p className="text-3xl font-bold text-accent-gradient tabular-nums">
+        <p className="font-data tabular text-xl text-token text-glow-token">
           {formatInteger(pack.tokens)}
         </p>
-        <p className="text-xs font-medium tracking-wide text-muted uppercase">tokens</p>
+        <p className="display-label text-2xs text-muted">tokens</p>
       </div>
 
-      <p className="mt-4 text-2xl font-semibold text-foreground tabular-nums">
-        {formatPackPrice(pack.priceCents)}
-      </p>
+      <p className="mt-4 font-data tabular text-lg text-foreground">{formatPackPrice(pack.priceCents)}</p>
 
       <Button
         type="button"
         variant={pack.highlight ? "primary" : "secondary"}
-        className="mt-6 w-full disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-6 w-full"
         onClick={onBuy}
         disabled={disabled}
-        aria-label={`Buy ${pack.name} pack — ${formatInteger(pack.tokens)} tokens for ${formatPackPrice(pack.priceCents)}`}
+        aria-label={`Buy ${pack.name} pack, ${formatInteger(pack.tokens)} tokens for ${formatPackPrice(pack.priceCents)}`}
         aria-busy={isPending}
       >
-        {isPending ? "Redirecting…" : `Buy ${pack.name}`}
+        {isPending ? "Redirecting" : `Buy ${pack.name}`}
       </Button>
     </Card>
   );
