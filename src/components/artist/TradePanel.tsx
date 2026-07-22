@@ -57,7 +57,7 @@ export function TradePanel({
   initialShareReserve,
   isAuthenticated,
 }: TradePanelProps) {
-  const { balance, refresh: refreshBalance } = useBalance();
+  const { balance, isLoading: isBalanceLoading, refresh: refreshBalance } = useBalance();
   const { toast } = useToast();
 
   const [side, setSide] = useState<TradeSide>("buy");
@@ -127,6 +127,12 @@ export function TradePanel({
   }, [side, debouncedAmount]);
 
   const spotPrice = reserves.tokenReserve / reserves.shareReserve;
+  // While the token balance hasn't resolved yet (e.g. a slow/retrying mobile
+  // network round trip), don't treat the unknown value as "0 tokens" -- that
+  // falsely blocks the buy side with "not enough tokens" before we actually
+  // know the balance. Shares (sell side) already default to 0 once holdings
+  // have loaded, which is a real number, not a placeholder.
+  const balanceUnresolved = side === "buy" && balance === null && isBalanceLoading;
   const maxAmount = side === "buy" ? (balance ?? 0) : (holdingShares ?? 0);
 
   const quote = useMemo(() => {
@@ -154,8 +160,9 @@ export function TradePanel({
 
   const parsedAmount = Number.parseFloat(amountInput);
   const hasAmount = Number.isFinite(parsedAmount) && parsedAmount > 0;
-  const exceedsMax = hasAmount && parsedAmount > maxAmount + 1e-9;
-  const canSubmit = Boolean(quote) && hasAmount && !exceedsMax && !isPending;
+  const exceedsMax = !balanceUnresolved && hasAmount && parsedAmount > maxAmount + 1e-9;
+  const canSubmit =
+    Boolean(quote) && hasAmount && !exceedsMax && !isPending && !balanceUnresolved;
   const needsConfirm = (preview?.tokenMagnitude ?? 0) > CONFIRM_THRESHOLD_TOKENS;
 
   const runTrade = useCallback(async () => {
@@ -210,7 +217,7 @@ export function TradePanel({
   }
 
   function handleSelectMax() {
-    if (maxAmount <= 0) return;
+    if (balanceUnresolved || maxAmount <= 0) return;
     // Trim trailing zeros for a clean editable value.
     setAmountInput(String(Number(maxAmount.toFixed(side === "buy" ? 2 : 8))));
   }
@@ -294,10 +301,14 @@ export function TradePanel({
             <span className="text-muted">{isBuy ? "Balance" : "Your shares"}</span>
             <span className="text-foreground">
               {isBuy ? (
-                <>
-                  <Num value={balance} variant="token" className="text-token text-glow-token" />{" "}
-                  tokens
-                </>
+                balanceUnresolved ? (
+                  <span className="text-muted">Loading balance…</span>
+                ) : (
+                  <>
+                    <Num value={balance} variant="token" className="text-token text-glow-token" />
+                    {" tokens"}
+                  </>
+                )
               ) : (
                 <>
                   <Num value={holdingShares} variant="share" /> shares
@@ -337,7 +348,7 @@ export function TradePanel({
               <button
                 type="button"
                 onClick={handleSelectMax}
-                disabled={maxAmount <= 0 || isPending}
+                disabled={balanceUnresolved || maxAmount <= 0 || isPending}
                 className="shrink-0 rounded-control border border-border px-2.5 py-1 text-xs display-label text-accent transition-colors hover:bg-background disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Max
@@ -433,11 +444,13 @@ export function TradePanel({
             <Button type="submit" disabled={!canSubmit} className="w-full">
               {isPending
                 ? "Placing"
-                : needsConfirm && hasAmount && !exceedsMax
-                  ? `Review ${isBuy ? "buy" : "sell"}`
-                  : isBuy
-                    ? "Buy shares"
-                    : "Sell shares"}
+                : balanceUnresolved
+                  ? "Loading balance…"
+                  : needsConfirm && hasAmount && !exceedsMax
+                    ? `Review ${isBuy ? "buy" : "sell"}`
+                    : isBuy
+                      ? "Buy shares"
+                      : "Sell shares"}
             </Button>
           )}
         </form>
